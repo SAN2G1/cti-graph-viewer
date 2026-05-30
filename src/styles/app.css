@@ -1,0 +1,271 @@
+:root {
+  color: #172033;
+  background: #f4f6f8;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1040px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+select,
+.upload-button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #172033;
+  border-radius: 6px;
+  min-height: 34px;
+}
+
+button {
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+select,
+.search-input {
+  padding: 0 10px;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto auto minmax(420px, 1fr) 240px;
+  height: 100vh;
+}
+
+.app-header {
+  background: #ffffff;
+  border-bottom: 1px solid #d7dde5;
+  padding: 12px 14px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.action-row,
+.upload-strip,
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-row {
+  justify-content: flex-end;
+}
+
+.upload-strip,
+.filter-group {
+  margin-top: 10px;
+}
+
+.upload-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.upload-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.search-input {
+  width: 240px;
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.summary-bar {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #d7dde5;
+  background: #eef3f8;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  min-height: 0;
+}
+
+.graph-section {
+  min-height: 0;
+  background: #ffffff;
+}
+
+.detail-panel {
+  border-left: 1px solid #d7dde5;
+  background: #fbfcfe;
+  padding: 14px;
+  overflow: auto;
+}
+
+.detail-panel h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.detail-panel h3 {
+  margin: 18px 0 8px;
+  font-size: 14px;
+}
+
+.entity-rows {
+  margin: 0;
+}
+
+.entity-rows div {
+  padding: 9px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.entity-rows dt {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.entity-rows dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-message {
+  line-height: 1.5;
+}
+
+.related-diagnostics p,
+.diagnostic-message {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.diagnostics-panel {
+  border-top: 1px solid #d7dde5;
+  background: #ffffff;
+  padding: 10px 14px;
+  overflow: auto;
+}
+
+.diagnostics-panel h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.diagnostic-groups {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.diagnostic-group {
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.diagnostic-group-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #eef3f8;
+  font-size: 13px;
+}
+
+.diagnostic-item {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  min-height: 38px;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.diagnostic-item.active {
+  outline: 2px solid #111827;
+  outline-offset: -2px;
+}
+
+.severity-error {
+  color: #b91c1c;
+}
+
+.severity-warning {
+  color: #c2410c;
+}
+
+.severity-info {
+  color: #0369a1;
+}
+
+@media (max-width: 1180px) {
+  .diagnostic-groups {
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
