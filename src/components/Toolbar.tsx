@@ -15,11 +15,12 @@ const viewModes: Array<{ value: ViewMode; label: string }> = [
 export function Toolbar() {
   const parsed = useGraphStore((state) => state.parsed);
   const cy = useGraphStore((state) => state.cy);
+  const screen = useGraphStore((state) => state.screen);
   const viewMode = useGraphStore((state) => state.viewMode);
+  const setScreen = useGraphStore((state) => state.setScreen);
   const setViewMode = useGraphStore((state) => state.setViewMode);
   const requestLayout = useGraphStore((state) => state.requestLayout);
   const requestFlowLayout = useGraphStore((state) => state.requestFlowLayout);
-  const requestMitreFlowLayout = useGraphStore((state) => state.requestMitreFlowLayout);
   const requestFit = useGraphStore((state) => state.requestFit);
   const resetHighlight = useGraphStore((state) => state.resetHighlight);
 
@@ -30,39 +31,56 @@ export function Toolbar() {
           <h1>Interactive CTI Dependency Hypergraph Viewer</h1>
         </div>
         <div className="action-row">
-          <select value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)}>
-            {viewModes.map((mode) => (
-              <option key={mode.value} value={mode.value}>
-                {mode.label}
-              </option>
-            ))}
-          </select>
-          <SearchBox />
-          <button type="button" onClick={requestLayout}>
-            Auto Layout
-          </button>
-          <button type="button" onClick={requestFlowLayout}>
-            Auto Flow Layout
-          </button>
-          <button type="button" onClick={requestMitreFlowLayout}>
-            MITRE Tactic Layout
-          </button>
-          <button type="button" onClick={requestFit}>
-            Fit View
-          </button>
-          <button type="button" onClick={resetHighlight}>
-            Reset
-          </button>
-          <button type="button" disabled={!parsed} onClick={() => parsed && exportJson(parsed)}>
-            Export JSON
-          </button>
-          <button type="button" disabled={!cy} onClick={() => exportPng(cy)}>
-            Export PNG
-          </button>
+          {screen === "viewer" ? (
+            <>
+              <select value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)}>
+                {viewModes.map((mode) => (
+                  <option key={mode.value} value={mode.value}>
+                    {mode.label}
+                  </option>
+                ))}
+              </select>
+              <SearchBox />
+              <button type="button" onClick={requestLayout}>
+                Auto Layout
+              </button>
+              <button type="button" onClick={requestFlowLayout}>
+                Auto Flow Layout
+              </button>
+              <button type="button" onClick={requestFit}>
+                Fit View
+              </button>
+              <button type="button" onClick={resetHighlight}>
+                Reset
+              </button>
+              <button type="button" disabled={!parsed} onClick={() => parsed && exportJson(parsed)}>
+                Export JSON
+              </button>
+              <button type="button" disabled={!cy} onClick={() => exportPng(cy)}>
+                Export PNG
+              </button>
+              <button type="button" onClick={() => setScreen("help")}>
+                Help
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => setScreen("viewer")}>
+                Back to Viewer
+              </button>
+              <button type="button" onClick={resetHighlight}>
+                Reset Selection
+              </button>
+            </>
+          )}
         </div>
       </div>
-      <FileUploadPanel />
-      <FilterPanel />
+      {screen === "viewer" ? (
+        <>
+          <FileUploadPanel />
+          <FilterPanel />
+        </>
+      ) : null}
     </header>
   );
 }

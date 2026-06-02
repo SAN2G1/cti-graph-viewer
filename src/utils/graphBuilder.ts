@@ -1,6 +1,5 @@
 import type cytoscape from "cytoscape";
-import type { GraphEdgeData, GraphViewOptions, ParsedWorkbook } from "../types/graph";
-import { expandRequirementToLeafFacts } from "./combineResolver";
+import type { Combine, Fact, GraphEdgeData, GraphViewOptions, ParsedWorkbook } from "../types/graph";
 import { getTwoHopIds, truncateLabel } from "./graphAlgorithms";
 
 type EdgeMap = Map<string, GraphEdgeData>;
@@ -9,7 +8,7 @@ export function buildCytoscapeElements(
   input: ParsedWorkbook,
   options: GraphViewOptions,
 ): cytoscape.ElementDefinition[] {
-  const full = options.viewMode === "attack" ? buildAttackFlowElements(input) : buildFullElements(input, options);
+  const full = options.viewMode === "attack" ? buildAttackFlowElements(input, options) : buildFullElements(input, options);
   const searched = applySearchAndFilters(full, input, options);
 
   if (options.viewMode === "focus" && options.selectedIds?.length) {
@@ -93,7 +92,7 @@ function buildFullElements(input: ParsedWorkbook, options: GraphViewOptions): cy
   return removeDanglingEdges(elements);
 }
 
-function buildAttackFlowElements(input: ParsedWorkbook): cytoscape.ElementDefinition[] {
+function buildAttackFlowElements(input: ParsedWorkbook, options: GraphViewOptions): cytoscape.ElementDefinition[] {
   const elements: cytoscape.ElementDefinition[] = input.nodes.map((node) => ({
     data: {
       id: node.id,
@@ -106,38 +105,96 @@ function buildAttackFlowElements(input: ParsedWorkbook): cytoscape.ElementDefini
   }));
 
   const factMap = new Map(input.facts.map((fact) => [fact.id, fact]));
+  const combineMap = new Map(input.combines.map((combine) => [combine.id, combine]));
   const producerByFact = new Map<string, string[]>();
-  for (const fact of input.facts) producerByFact.set(fact.id, fact.producers);
+
+  for (const fact of input.facts) producerByFact.set(fact.id, [...fact.producers]);
   for (const node of input.nodes) {
     for (const factId of node.parsers) {
       producerByFact.set(factId, [...new Set([...(producerByFact.get(factId) ?? []), node.id])]);
     }
   }
 
-  for (const fact of input.facts.filter((item) => item.isExternal)) {
-    elements.push({
-      data: { id: `${fact.id}_external`, entityType: "fact", label: `${fact.id}\nexternal`, searchText: `${fact.id} ${fact.name}`.toLowerCase(), isExternal: true },
-      classes: "fact-node external-fact",
-    });
-  }
-
-  const combineMap = new Map(input.combines.map((combine) => [combine.id, combine]));
+  const usedCombines = new Set<string>();
+  const usedExternalFacts = new Set<string>();
   const edges = new Map<string, GraphEdgeData>();
-  for (const node of input.nodes) {
-    const leafFacts = expandRequirementToLeafFacts(node.requirements, combineMap).facts;
-    for (const factId of leafFacts) {
-      const producers = producerByFact.get(factId) ?? [];
-      if ((factMap.get(factId)?.isExternal ?? false) && producers.length === 0) {
-        addEdge(edges, `${factId}_external`, node.id, factId);
-      }
-      for (const producerId of producers) {
-        if (producerId !== node.id) addEdge(edges, producerId, node.id, factId);
-      }
+
+  const ensureExternalFactNode = (factId: string): string | null => {
+    const fact = factMap.get(factId);
+    if (!fact || !shouldIncludeAttackFact(fact, options) || !fact.isExternal) return null;
+    const externalId = `${factId}_external`;
+    if (!usedExternalFacts.has(externalId)) {
+      usedExternalFacts.add(externalId);
+      elements.push({
+        data: {
+          id: externalId,
+          entityType: "fact",
+          label: `${fact.id}\nexternal`,
+          searchText: `${fact.id} ${fact.name} external ${fact.description}`.toLowerCase(),
+          isExternal: true,
+          level: fact.level,
+        },
+        classes: "fact-node external-fact attack-flow-external-fact",
+      });
     }
-  }
+    return externalId;
+  };
+
+  const ensureCombineNode = (combineId: string): Combine | null => {
+    const combine = combineMap.get(combineId);
+    if (!combine) return null;
+    if (!usedCombines.has(combineId)) {
+      usedCombines.add(combineId);
+      elements.push({
+        data: {
+          id: combine.id,
+          entityType: "combine",
+          label: combine.operator,
+          searchText: `${combine.id} ${combine.operator} ${combine.label}`.toLowerCase(),
+          operator: combine.operator,
+          detailLabel: combine.label,
+        },
+        classes: classNames(["combine-node", "attack-flow-gate", combine.operator === "AND" ? "and-combine" : "or-combine"]),
+      });
+    }
+    return combine;
+  };
+
+  const connectRequirement = (requirementId: string, targetId: string): void => {
+    if (requirementId.startsWith("F")) {
+      const fact = factMap.get(requirementId);
+      if (!fact || !shouldIncludeAttackFact(fact, options)) return;
+
+      const producers = producerByFact.get(requirementId) ?? [];
+      if (producers.length > 0) {
+        producers.forEach((producerId) => addEdge(edges, producerId, targetId, requirementId));
+        return;
+      }
+
+      const sourceId = ensureExternalFactNode(requirementId);
+      if (sourceId) addEdge(edges, sourceId, targetId, requirementId);
+      return;
+    }
+
+    if (!requirementId.startsWith("C")) return;
+    const combine = ensureCombineNode(requirementId);
+    if (!combine) return;
+    addEdge(edges, requirementId, targetId, "combine_output");
+    combine.members.forEach((memberId) => connectRequirement(memberId, requirementId));
+  };
+
+  input.nodes.forEach((node) => {
+    node.requirements.forEach((requirementId) => connectRequirement(requirementId, node.id));
+  });
 
   elements.push(...edgeElements(edges, new Set(), factNameMap(input)));
   return removeDanglingEdges(elements);
+}
+
+function shouldIncludeAttackFact(fact: Fact, options: GraphViewOptions): boolean {
+  if (fact.isExternal && options.showExternalFacts === false) return false;
+  if (fact.level === "execution_required" && options.showExecutionRequiredFacts === false) return false;
+  return true;
 }
 
 function applySearchAndFilters(
@@ -163,12 +220,56 @@ function applySearchAndFilters(
   }
 
   if (!search && !severityIds && !options.tacticFilter) return elements;
+  if (matchingIds.size === 0) return [];
 
+  const visibleIds = expandVisibleContext(elements, matchingIds, options.viewMode === "attack" ? 2 : 1);
   return elements.filter((element) => {
     const data = element.data as Record<string, unknown>;
-    if (data.source && data.target) return matchingIds.has(String(data.source)) && matchingIds.has(String(data.target));
-    return matchingIds.has(String(data.id));
+    if (data.source && data.target) return visibleIds.has(String(data.source)) && visibleIds.has(String(data.target));
+    return visibleIds.has(String(data.id));
   });
+}
+
+function expandVisibleContext(
+  elements: cytoscape.ElementDefinition[],
+  seedIds: Set<string>,
+  depth: number,
+): Set<string> {
+  const adjacency = new Map<string, Set<string>>();
+
+  for (const element of elements) {
+    const data = element.data as Record<string, unknown>;
+    if (data.source && data.target) {
+      const source = String(data.source);
+      const target = String(data.target);
+      addNeighbor(adjacency, source, target);
+      addNeighbor(adjacency, target, source);
+    } else if (data.id) {
+      adjacency.set(String(data.id), adjacency.get(String(data.id)) ?? new Set());
+    }
+  }
+
+  const visible = new Set(seedIds);
+  let frontier = new Set(seedIds);
+  for (let step = 0; step < depth; step += 1) {
+    const next = new Set<string>();
+    for (const id of frontier) {
+      for (const neighbor of adjacency.get(id) ?? []) {
+        if (!visible.has(neighbor)) next.add(neighbor);
+        visible.add(neighbor);
+      }
+    }
+    frontier = next;
+    if (frontier.size === 0) break;
+  }
+
+  return visible;
+}
+
+function addNeighbor(adjacency: Map<string, Set<string>>, source: string, target: string): void {
+  const neighbors = adjacency.get(source) ?? new Set<string>();
+  neighbors.add(target);
+  adjacency.set(source, neighbors);
 }
 
 function addEdge(edges: EdgeMap, source: string, target: string, edgeType: string): void {
@@ -198,11 +299,12 @@ function edgeElements(
   return [...edges.values()].map((edge) => ({
     data: {
       ...edge,
-      displayLabel: edge.displayLabel ?? edge.label,
+      displayLabel: edgeDisplayLabel(edge),
       hoverLabel: edgeHoverLabel(edge, factNames),
     },
     classes: classNames([
       "dependency-edge",
+      edge.edgeTypes.some((edgeType) => edgeType.startsWith("F")) && "fact-condition-edge",
       edge.edgeTypes.includes("combine_member") && "combine-member-edge",
       edge.edgeTypes.includes("combine_output") && "combine-output-edge",
       (diagnosticIds.has(edge.source) || diagnosticIds.has(edge.target)) && "diagnostic-edge",
@@ -227,22 +329,21 @@ function factNameMap(input: ParsedWorkbook): Map<string, string> {
   return new Map(input.facts.map((fact) => [fact.id, fact.name]));
 }
 
+function edgeDisplayLabel(edge: GraphEdgeData): string {
+  const factIds = edge.edgeTypes.filter((edgeType) => edgeType.startsWith("F"));
+  return factIds.join("\n");
+}
+
 function edgeHoverLabel(edge: GraphEdgeData, factNames: Map<string, string>): string | undefined {
-  const factIds = new Set<string>();
-  for (const edgeType of edge.edgeTypes) {
-    if (edgeType.startsWith("F")) factIds.add(edgeType);
+  const factIds = edge.edgeTypes.filter((edgeType) => edgeType.startsWith("F"));
+  if (factIds.length > 0) {
+    return factIds
+      .map((factId) => {
+        const name = factNames.get(factId);
+        return name ? `${factId} ${name}` : factId;
+      })
+      .join(", ");
   }
-  for (const endpoint of [edge.source, edge.target]) {
-    const factId = endpoint.replace(/_external$/, "");
-    if (factId.startsWith("F")) factIds.add(factId);
-  }
-
-  const names = [...factIds]
-    .map((factId) => {
-      const name = factNames.get(factId);
-      return name || factId;
-    })
-    .filter(Boolean);
-
-  return names.length > 0 ? names.join(", ") : undefined;
+  if (edge.edgeTypes.includes("combine_output")) return "Condition satisfied";
+  return undefined;
 }

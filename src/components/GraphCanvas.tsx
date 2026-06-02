@@ -3,7 +3,7 @@ import cytoscape from "cytoscape";
 import fcose from "cytoscape-fcose";
 import { useGraphStore } from "../store/graphStore";
 import { buildCytoscapeElements } from "../utils/graphBuilder";
-import { buildDirectedFlowLayout } from "../utils/graphAlgorithms";
+import { buildAttackConditionLayout, buildDependencyLaneLayout, buildDirectedFlowLayout } from "../utils/graphAlgorithms";
 import { ALLOWED_TACTICS } from "../constants/allowedValues";
 
 cytoscape.use(fcose);
@@ -13,6 +13,7 @@ export function GraphCanvas() {
   const cyRef = useRef<cytoscape.Core | null>(null);
   const didRunInitialLayoutRef = useRef(false);
   const previousViewModeRef = useRef<string | null>(null);
+  const previousSelectionKeyRef = useRef("");
   const dragFollowRef = useRef<{
     lastPosition: cytoscape.Position;
     levels: Array<{
@@ -22,6 +23,8 @@ export function GraphCanvas() {
     pendingDelta: cytoscape.Position;
     frameId: number | null;
     active: boolean;
+    engaged: boolean;
+    accumulatedDistance: number;
   } | null>(null);
   const parsed = useGraphStore((state) => state.parsed);
   const selectedIds = useGraphStore((state) => state.selectedIds);
@@ -74,10 +77,12 @@ export function GraphCanvas() {
       if (node.hasClass("tactic-band")) return;
       dragFollowRef.current = {
         lastPosition: { ...node.position() },
-        levels: collectDownstreamLevels(node, 5),
+        levels: [],
         pendingDelta: { x: 0, y: 0 },
         frameId: null,
         active: true,
+        engaged: false,
+        accumulatedDistance: 0,
       };
     };
     cy.on("grab", "node", setupDragFollow);
@@ -95,9 +100,16 @@ export function GraphCanvas() {
       };
       if (Math.abs(delta.x) < 0.01 && Math.abs(delta.y) < 0.01) return;
 
+      follow.lastPosition = { ...position };
+      if (!follow.engaged) {
+        follow.accumulatedDistance += Math.hypot(delta.x, delta.y);
+        if (follow.accumulatedDistance < 6) return;
+        follow.engaged = true;
+        follow.levels = collectDownstreamLevels(node, 5);
+      }
+
       follow.pendingDelta.x += delta.x;
       follow.pendingDelta.y += delta.y;
-      follow.lastPosition = { ...position };
       scheduleDragFollowFrame(cy, dragFollowRef);
     });
     const clearDragFollow = () => {
@@ -154,7 +166,7 @@ export function GraphCanvas() {
     cy.nodes().grabify();
     const viewModeChanged = previousViewModeRef.current !== viewMode;
     if (cy.nodes().length > 0 && (!didRunInitialLayoutRef.current || positionedNodeCount === 0 || viewModeChanged)) {
-      runLayout(cy);
+      runLayout(cy, viewMode);
       didRunInitialLayoutRef.current = true;
     }
     previousViewModeRef.current = viewMode;
@@ -164,13 +176,17 @@ export function GraphCanvas() {
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-    applyHighlight(cy, selectedIds, viewMode, parsed?.diagnostics ?? []);
+    const selectionKey = selectedIds.join("|");
+    applyHighlight(cy, selectedIds, viewMode, parsed?.diagnostics ?? [], {
+      animateSelection: selectionKey !== previousSelectionKeyRef.current,
+    });
+    previousSelectionKeyRef.current = selectionKey;
   }, [selectedIds, viewMode, parsed?.diagnostics]);
 
   useEffect(() => {
     const cy = cyRef.current;
-    if (cy && layoutVersion > 0) runLayout(cy);
-  }, [layoutVersion]);
+    if (cy && layoutVersion > 0) runLayout(cy, viewMode);
+  }, [layoutVersion, viewMode]);
 
   useEffect(() => {
     const cy = cyRef.current;
@@ -190,21 +206,42 @@ export function GraphCanvas() {
   );
 }
 
-function runLayout(cy: cytoscape.Core): void {
+function runLayout(cy: cytoscape.Core, viewMode: string): void {
   clearTacticBands(cy);
-  cy.layout({
-    name: "fcose",
-    animate: false,
-    fit: true,
-    padding: 44,
-    nodeDimensionsIncludeLabels: true,
-    idealEdgeLength: 92,
-    nodeRepulsion: 4200,
-    nodeSeparation: 32,
-    nestingFactor: 0.8,
-    gravity: 0.36,
-    gravityRange: 3.2,
-  } as cytoscape.LayoutOptions).run();
+
+  if (viewMode === "attack") {
+    runAttackFlowLayout(cy);
+    return;
+  }
+
+  const orientation = cy.width() >= cy.height() ? "horizontal" : "vertical";
+  const positions = buildDependencyLaneLayout(cy, orientation);
+
+  cy.batch(() => {
+    for (const [id, position] of positions) {
+      const node = cy.getElementById(id);
+      if (node.nonempty()) node.position(position);
+    }
+  });
+
+  addTacticBands(cy, orientation);
+  cy.fit(undefined, 48);
+}
+
+function runAttackFlowLayout(cy: cytoscape.Core): void {
+  clearTacticBands(cy);
+  const orientation = cy.width() >= cy.height() ? "horizontal" : "vertical";
+  const positions = buildAttackConditionLayout(cy, orientation);
+
+  cy.batch(() => {
+    for (const [id, position] of positions) {
+      const node = cy.getElementById(id);
+      if (node.nonempty()) node.position(position);
+    }
+  });
+
+  addTacticBands(cy, orientation);
+  cy.fit(undefined, 56);
 }
 
 function runFlowLayout(cy: cytoscape.Core, mode: "default" | "mitre"): void {
@@ -360,6 +397,8 @@ function scheduleDragFollowFrame(
     pendingDelta: cytoscape.Position;
     frameId: number | null;
     active: boolean;
+    engaged: boolean;
+    accumulatedDistance: number;
   } | null>,
 ): void {
   const follow = dragFollowRef.current;
@@ -428,8 +467,11 @@ function applyHighlight(
   selectedIds: string[],
   viewMode: string,
   diagnostics: import("../types/graph").GraphDiagnostic[],
+  options?: {
+    animateSelection?: boolean;
+  },
 ): void {
-  cy.elements().removeClass("selected one-hop two-hop dimmed diagnostic-focus connected-edge adjacent-node");
+  cy.elements().removeClass("selected one-hop two-hop dimmed diagnostic-focus connected-edge incoming-edge outgoing-edge adjacent-node");
   let selected = cy.collection();
   selectedIds.forEach((id) => {
     const element = cy.getElementById(id);
@@ -446,18 +488,25 @@ function applyHighlight(
 
   if (selected.empty()) return;
   const connectedEdges = selected.connectedEdges();
+  const incomingEdges = connectedEdges.filter((edge) => selected.contains(edge.target()) && !selected.contains(edge.source()));
+  const outgoingEdges = connectedEdges.filter((edge) => selected.contains(edge.source()) && !selected.contains(edge.target()));
+  const internalEdges = connectedEdges.difference(incomingEdges).difference(outgoingEdges);
   const adjacentNodes = connectedEdges.connectedNodes().difference(selected);
   const oneHop = selected.neighborhood();
   const twoHop = oneHop.neighborhood().difference(selected).difference(oneHop);
   cy.elements().difference(selected.union(oneHop).union(twoHop).union(connectedEdges).union(adjacentNodes)).addClass("dimmed");
   selected.addClass("selected");
   adjacentNodes.addClass("adjacent-node");
-  connectedEdges.addClass("connected-edge");
+  internalEdges.addClass("connected-edge");
+  incomingEdges.addClass("incoming-edge");
+  outgoingEdges.addClass("outgoing-edge");
   oneHop.addClass("one-hop");
   twoHop.addClass("two-hop");
 
   const first = selected.first();
-  if (first.nonempty()) cy.animate({ center: { eles: first }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 250 });
+  if (first.nonempty() && options?.animateSelection !== false) {
+    cy.animate({ center: { eles: first }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 250 });
+  }
 }
 
 const graphStyle = [
@@ -513,6 +562,10 @@ const graphStyle = [
     selector: ".fact-node",
     style: {
       shape: "ellipse",
+      width: 80,
+      height: 42,
+      "font-size": 10,
+      "text-max-width": 108,
       "background-color": "#ecfdf5",
       "border-color": "#059669",
     },
@@ -533,9 +586,37 @@ const graphStyle = [
     selector: ".combine-node",
     style: {
       shape: "diamond",
-      width: 74,
-      height: 74,
+      width: 62,
+      height: 62,
+      "font-size": 10,
+      "text-max-width": 84,
       "background-color": "#fff7ed",
+    },
+  },
+  {
+    selector: ".attack-flow-fact",
+    style: {
+      width: 90,
+      height: 46,
+      "font-size": 10,
+      "text-max-width": 110,
+      "background-color": "#f0fdf4",
+      "border-width": 3,
+    },
+  },
+  {
+    selector: ".attack-flow-gate",
+    style: {
+      width: 70,
+      height: 70,
+      label: "data(label)",
+      "font-size": 16,
+      "font-weight": 800,
+      "text-max-width": 46,
+      color: "#111827",
+      "background-color": "#fff7ed",
+      "border-width": 4,
+      "z-index": 10,
     },
   },
   {
@@ -577,14 +658,38 @@ const graphStyle = [
       "text-background-color": "#ffffff",
       "text-background-opacity": 0.85,
       "text-background-padding": 2,
+      "text-rotation": "autorotate",
+      "source-text-offset": 18,
+      "target-text-offset": 18,
     },
   },
   {
     selector: ".combine-member-edge",
     style: {
+      width: 3,
       "line-style": "dashed",
       "line-color": "#9a3412",
       "target-arrow-color": "#9a3412",
+    },
+  },
+  {
+    selector: ".supports-fact-edge",
+    style: {
+      width: 3,
+      "line-color": "#0f766e",
+      "target-arrow-color": "#0f766e",
+    },
+  },
+  {
+    selector: ".fact-condition-edge",
+    style: {
+      width: 3,
+      "line-color": "#0f766e",
+      "target-arrow-color": "#0f766e",
+      color: "#065f46",
+      "font-size": 10,
+      "text-background-opacity": 1,
+      "z-index": 16,
     },
   },
   {
@@ -611,6 +716,28 @@ const graphStyle = [
       color: "#111827",
       "font-size": 11,
       "z-index": 18,
+    },
+  },
+  {
+    selector: ".incoming-edge",
+    style: {
+      width: 5,
+      "line-color": "#1d4ed8",
+      "target-arrow-color": "#1d4ed8",
+      color: "#1d4ed8",
+      "font-size": 11,
+      "z-index": 19,
+    },
+  },
+  {
+    selector: ".outgoing-edge",
+    style: {
+      width: 5,
+      "line-color": "#d97706",
+      "target-arrow-color": "#d97706",
+      color: "#d97706",
+      "font-size": 11,
+      "z-index": 19,
     },
   },
   {

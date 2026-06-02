@@ -2,6 +2,21 @@ import type cytoscape from "cytoscape";
 import type { ParsedWorkbook } from "../types/graph";
 import { buildCytoscapeElements } from "./graphBuilder";
 
+type SaveFilePickerWindow = Window & typeof globalThis & {
+  showSaveFilePicker?: (options?: {
+    suggestedName?: string;
+    types?: Array<{
+      description?: string;
+      accept: Record<string, string[]>;
+    }>;
+  }) => Promise<{
+    createWritable: () => Promise<{
+      write: (data: Blob) => Promise<void>;
+      close: () => Promise<void>;
+    }>;
+  }>;
+};
+
 export function exportJson(input: ParsedWorkbook): void {
   const payload = {
     nodes: input.nodes,
@@ -12,24 +27,61 @@ export function exportJson(input: ParsedWorkbook): void {
       elements: buildCytoscapeElements(input, { viewMode: "full", severityFilter: "all", showExternalFacts: true, showExecutionRequiredFacts: true }),
     },
   };
-  downloadBlob(JSON.stringify(payload, null, 2), "cti-dependency-graph.json", "application/json");
+  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), "cti-dependency-graph.json");
 }
 
-export function exportPng(cy: cytoscape.Core | null): void {
+export async function exportPng(cy: cytoscape.Core | null): Promise<void> {
   if (!cy) return;
-  const dataUrl = cy.png({ full: true, scale: 2, bg: "#ffffff" });
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = "cti-dependency-graph.png";
-  link.click();
+  const blob = await cy.png({ output: "blob-promise", full: true, scale: 2, bg: "#ffffff" });
+  const saved = await saveWithFilePicker(blob, "cti-dependency-graph.png", "image/png");
+  if (saved) return;
+  downloadBlob(blob, "cti-dependency-graph.png", true);
 }
 
-function downloadBlob(content: string, filename: string, type: string): void {
-  const blob = new Blob([content], { type });
+async function saveWithFilePicker(blob: Blob, filename: string, mimeType: string): Promise<boolean> {
+  const pickerWindow = window as SaveFilePickerWindow;
+  if (typeof pickerWindow.showSaveFilePicker !== "function") return false;
+
+  try {
+    const handle = await pickerWindow.showSaveFilePicker({
+      suggestedName: filename,
+      types: [
+        {
+          description: "PNG image",
+          accept: {
+            [mimeType]: [".png"],
+          },
+        },
+      ],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return true;
+    console.error("Failed to save PNG with file picker", error);
+    return false;
+  }
+}
+
+function downloadBlob(blob: Blob, filename: string, openPreviewOnFailure = false): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+
+  if (openPreviewOnFailure) {
+    window.setTimeout(() => {
+      if (document.hasFocus()) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    }, 150);
+  }
+
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

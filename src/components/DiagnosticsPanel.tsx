@@ -48,7 +48,10 @@ export function DiagnosticsPanel() {
                   onClick={() => setSelectedDiagnostic(diagnostic)}
                 >
                   <span>{diagnostic.severity.toUpperCase()}</span>
-                  <span>{diagnostic.message}</span>
+                  <span>
+                    <span>{diagnostic.message}</span>
+                    <span className="diagnostic-meta">{formatRowRefs(diagnostic.rowRefs)}</span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -57,4 +60,11 @@ export function DiagnosticsPanel() {
       </div>
     </section>
   );
+}
+
+function formatRowRefs(rowRefs: GraphDiagnostic["rowRefs"]): string {
+  if (!rowRefs || rowRefs.length === 0) return "Location unavailable";
+  return rowRefs
+    .map((rowRef) => `${rowRef.table.toUpperCase()} row ${rowRef.rowIndex + 1}${rowRef.column ? ` · ${rowRef.column}` : ""}`)
+    .join(" / ");
 }

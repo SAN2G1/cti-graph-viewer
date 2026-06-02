@@ -4,11 +4,14 @@ import type { WorkBook } from "xlsx";
 import type { DiagnosticSeverity, GraphDiagnostic, ParsedWorkbook, ViewMode } from "../types/graph";
 import { parseUploadedWorkbooks, type UploadedTables } from "../utils/workbookParser";
 
+type AppScreen = "viewer" | "help";
+
 interface GraphState {
   uploadedTables: UploadedTables;
   parsed: ParsedWorkbook | null;
   selectedIds: string[];
   selectedDiagnostic: GraphDiagnostic | null;
+  screen: AppScreen;
   viewMode: ViewMode;
   searchTerm: string;
   tacticFilter: string;
@@ -23,6 +26,7 @@ interface GraphState {
   setWorkbook: (kind: keyof UploadedTables, workbook: WorkBook) => void;
   setSelectedIds: (ids: string[]) => void;
   setSelectedDiagnostic: (diagnostic: GraphDiagnostic | null) => void;
+  setScreen: (screen: AppScreen) => void;
   setViewMode: (viewMode: ViewMode) => void;
   setSearchTerm: (term: string) => void;
   setTacticFilter: (tactic: string) => void;
@@ -33,7 +37,6 @@ interface GraphState {
   setCy: (cy: cytoscape.Core | null) => void;
   requestLayout: () => void;
   requestFlowLayout: () => void;
-  requestMitreFlowLayout: () => void;
   requestFit: () => void;
 }
 
@@ -42,6 +45,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   parsed: null,
   selectedIds: [],
   selectedDiagnostic: null,
+  screen: "viewer",
   viewMode: "full",
   searchTerm: "",
   tacticFilter: "",
@@ -61,6 +65,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setSelectedIds: (selectedIds) => set({ selectedIds, selectedDiagnostic: null }),
   setSelectedDiagnostic: (selectedDiagnostic) =>
     set({ selectedDiagnostic, selectedIds: selectedDiagnostic?.relatedIds ?? [] }),
+  setScreen: (screen) => set({ screen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setSearchTerm: (searchTerm) => set({ searchTerm }),
   setTacticFilter: (tacticFilter) => set({ tacticFilter }),
@@ -71,6 +76,5 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setCy: (cy) => set({ cy }),
   requestLayout: () => set({ layoutVersion: get().layoutVersion + 1 }),
   requestFlowLayout: () => set({ flowLayoutVersion: get().flowLayoutVersion + 1, flowLayoutMode: "default" }),
-  requestMitreFlowLayout: () => set({ flowLayoutVersion: get().flowLayoutVersion + 1, flowLayoutMode: "mitre" }),
   requestFit: () => set({ fitVersion: get().fitVersion + 1 }),
 }));

@@ -1,4 +1,5 @@
 import { useGraphStore } from "../store/graphStore";
+import type { GraphDiagnostic } from "../types/graph";
 import { expandCombineToLeafFacts, expandRequirementToLeafFacts } from "../utils/combineResolver";
 
 export function DetailPanel() {
@@ -16,6 +17,7 @@ export function DetailPanel() {
           ["Severity", selectedDiagnostic.severity],
           ["Type", selectedDiagnostic.type],
           ["Related IDs", selectedDiagnostic.relatedIds.join(", ") || "-"],
+          ["Workbook rows", formatRowRefs(selectedDiagnostic.rowRefs)],
           ["Suggested Fix", selectedDiagnostic.suggestedFix ?? "-"],
         ]} />
         <p className="diagnostic-message">{selectedDiagnostic.message}</p>
@@ -106,15 +108,24 @@ function EntityRows({ rows }: { rows: Array<[string, string]> }) {
   );
 }
 
-function RelatedDiagnostics({ diagnostics }: { diagnostics: import("../types/graph").GraphDiagnostic[] }) {
+function RelatedDiagnostics({ diagnostics }: { diagnostics: GraphDiagnostic[] }) {
   return (
     <div className="related-diagnostics">
       <h3>Related Diagnostics</h3>
       {diagnostics.length === 0 ? <p>None</p> : diagnostics.map((diagnostic) => (
         <p key={diagnostic.id} className={`severity-${diagnostic.severity}`}>
-          [{diagnostic.checkNo}] {diagnostic.message}
+          <strong>[{diagnostic.checkNo}]</strong> {diagnostic.message}
+          <br />
+          <span className="diagnostic-meta">{formatRowRefs(diagnostic.rowRefs)}</span>
         </p>
       ))}
     </div>
   );
+}
+
+function formatRowRefs(rowRefs: GraphDiagnostic["rowRefs"]): string {
+  if (!rowRefs || rowRefs.length === 0) return "Location unavailable";
+  return rowRefs
+    .map((rowRef) => `${rowRef.table.toUpperCase()} row ${rowRef.rowIndex + 1}${rowRef.column ? ` · ${rowRef.column}` : ""}`)
+    .join(" / ");
 }

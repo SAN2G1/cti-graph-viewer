@@ -5,6 +5,15 @@ type FlowLayoutOptions = {
   rankMode?: "directed-flow" | "mitre-tactic";
 };
 
+type LaneEntry = {
+  id: string;
+  column: number;
+  lane: number;
+  offset: number;
+  rowGap: number;
+  degreeScore: number;
+};
+
 export function getTwoHopIds(elements: cytoscape.ElementDefinition[], selectedIds: string[]): Set<string> {
   const adjacency = new Map<string, Set<string>>();
   for (const element of elements) {
@@ -112,7 +121,7 @@ export function buildDirectedFlowLayout(
   const primaryKey: "x" | "y" = orientation === "horizontal" ? "x" : "y";
   const secondaryKey: "x" | "y" = orientation === "horizontal" ? "y" : "x";
 
-  rankEntries.forEach(([rank, entries], rankIndex) => {
+  rankEntries.forEach(([rank, entries]) => {
     entries.sort((left, right) => {
       if (options.rankMode === "mitre-tactic" && left.tacticIndex !== right.tacticIndex) {
         return left.tacticIndex - right.tacticIndex;
@@ -135,6 +144,356 @@ export function buildDirectedFlowLayout(
 
   centerPositions(positions, orientation);
   return positions;
+}
+
+export function buildAttackConditionLayout(
+  cy: cytoscape.Core,
+  orientation: "horizontal" | "vertical",
+): Map<string, cytoscape.Position> {
+  const attackNodes = cy.nodes('.attack-node').toArray();
+  const gateNodes = cy.nodes('.attack-flow-gate').toArray();
+  const externalNodes = cy.nodes('.attack-flow-external-fact').toArray();
+  const positions = new Map<string, cytoscape.Position>();
+  const attackById = new Map(attackNodes.map((node) => [node.id(), node]));
+  const gateById = new Map(gateNodes.map((node) => [node.id(), node]));
+  const dependencyOut = new Map<string, Set<string>>();
+  const dependencyIn = new Map<string, Set<string>>();
+
+  attackNodes.forEach((node) => {
+    dependencyOut.set(node.id(), new Set());
+    dependencyIn.set(node.id(), new Set());
+  });
+
+  const gateAttackTargets = new Map<string, string[]>();
+  const collectAttackTargets = (gateId: string, visiting = new Set<string>()): string[] => {
+    if (gateAttackTargets.has(gateId)) return gateAttackTargets.get(gateId)!;
+    if (visiting.has(gateId)) return [];
+    visiting.add(gateId);
+    const gate = gateById.get(gateId);
+    if (!gate) return [];
+    const targets = new Set<string>();
+    gate.outgoers('edge').targets().forEach((target) => {
+      if (target.hasClass('attack-node')) targets.add(target.id());
+      else if (target.hasClass('attack-flow-gate')) {
+        collectAttackTargets(target.id(), new Set(visiting)).forEach((id) => targets.add(id));
+      }
+    });
+    const result = [...targets];
+    gateAttackTargets.set(gateId, result);
+    return result;
+  };
+
+  attackNodes.forEach((node) => {
+    node.outgoers('edge').targets().forEach((target) => {
+      if (target.hasClass('attack-node')) {
+        dependencyOut.get(node.id())?.add(target.id());
+        dependencyIn.get(target.id())?.add(node.id());
+      } else if (target.hasClass('attack-flow-gate')) {
+        collectAttackTargets(target.id()).forEach((attackId) => {
+          dependencyOut.get(node.id())?.add(attackId);
+          dependencyIn.get(attackId)?.add(node.id());
+        });
+      }
+    });
+  });
+
+  const grouped = new Map<number, cytoscape.NodeSingular[]>();
+  attackNodes.forEach((node) => {
+    const tacticIndex = Math.min(getNodeTacticIndex(node), ALLOWED_TACTICS.length - 1);
+    const list = grouped.get(tacticIndex) ?? [];
+    list.push(node);
+    grouped.set(tacticIndex, list);
+  });
+
+  grouped.forEach((nodes) => {
+    nodes.sort((left, right) => {
+      const leftScore = (dependencyOut.get(left.id())?.size ?? 0) - (dependencyIn.get(left.id())?.size ?? 0);
+      const rightScore = (dependencyOut.get(right.id())?.size ?? 0) - (dependencyIn.get(right.id())?.size ?? 0);
+      if (leftScore !== rightScore) return rightScore - leftScore;
+      return left.id().localeCompare(right.id());
+    });
+  });
+
+  const columnGap = 320;
+  const rowGap = 170;
+  const computeAttackPositions = () => {
+    grouped.forEach((nodes, column) => {
+      const offset = ((nodes.length - 1) * rowGap) / 2;
+      nodes.forEach((node, index) => {
+        positions.set(node.id(), {
+          x: column * columnGap,
+          y: index * rowGap - offset,
+        });
+      });
+    });
+  };
+
+  computeAttackPositions();
+  for (let sweep = 0; sweep < 5; sweep += 1) {
+    grouped.forEach((nodes) => {
+      nodes.sort((left, right) => {
+        const leftNeighbors = [...(dependencyOut.get(left.id()) ?? []), ...(dependencyIn.get(left.id()) ?? [])]
+          .map((id) => positions.get(id)?.y)
+          .filter((value): value is number => value !== undefined);
+        const rightNeighbors = [...(dependencyOut.get(right.id()) ?? []), ...(dependencyIn.get(right.id()) ?? [])]
+          .map((id) => positions.get(id)?.y)
+          .filter((value): value is number => value !== undefined);
+        const leftScore = leftNeighbors.length > 0 ? average(leftNeighbors) : positions.get(left.id())?.y ?? 0;
+        const rightScore = rightNeighbors.length > 0 ? average(rightNeighbors) : positions.get(right.id())?.y ?? 0;
+        if (Math.abs(leftScore - rightScore) > 1) return leftScore - rightScore;
+        return left.id().localeCompare(right.id());
+      });
+    });
+    computeAttackPositions();
+  }
+
+  const gateLevelMemo = new Map<string, number>();
+  const getGateLevel = (gateId: string, visiting = new Set<string>()): number => {
+    if (gateLevelMemo.has(gateId)) return gateLevelMemo.get(gateId)!;
+    if (visiting.has(gateId)) return 0;
+    visiting.add(gateId);
+    const gate = gateById.get(gateId);
+    if (!gate) return 0;
+    const levels: number[] = [];
+    gate.outgoers('edge').targets().forEach((target) => {
+      if (target.hasClass('attack-node')) levels.push(0);
+      else if (target.hasClass('attack-flow-gate')) levels.push(getGateLevel(target.id(), new Set(visiting)) + 1);
+    });
+    const level = levels.length > 0 ? Math.min(...levels) : 0;
+    gateLevelMemo.set(gateId, level);
+    return level;
+  };
+
+  const sortedGates = [...gateNodes].sort((left, right) => getGateLevel(left.id()) - getGateLevel(right.id()));
+  sortedGates.forEach((gate, index) => {
+    const targets = gate.outgoers('edge').targets().toArray();
+    const targetPositions = targets
+      .map((target) => positions.get(target.id()))
+      .filter((value): value is cytoscape.Position => Boolean(value));
+    const incomingPositions = gate.incomers('edge').sources().toArray()
+      .map((source) => positions.get(source.id()))
+      .filter((value): value is cytoscape.Position => Boolean(value));
+    const targetAnchor = targetPositions.length > 0
+      ? { x: average(targetPositions.map((pos) => pos.x)), y: average(targetPositions.map((pos) => pos.y)) }
+      : { x: 0, y: 0 };
+    const incomingY = incomingPositions.length > 0 ? average(incomingPositions.map((pos) => pos.y)) : targetAnchor.y;
+    const level = getGateLevel(gate.id());
+    const x = targetAnchor.x - 140 - level * 110;
+    const direction = index % 2 === 0 ? -1 : 1;
+    const yBase = (incomingY + targetAnchor.y) / 2;
+    const y = Math.abs(incomingY - targetAnchor.y) < 50 ? yBase + direction * (54 + level * 10) : yBase;
+    positions.set(gate.id(), { x, y });
+  });
+
+  const externalBuckets = new Map<string, cytoscape.NodeSingular[]>();
+  externalNodes.forEach((node) => {
+    const targets = node.outgoers('edge').targets().toArray();
+    const anchorId = targets[0]?.id() ?? '__orphan__';
+    const list = externalBuckets.get(anchorId) ?? [];
+    list.push(node);
+    externalBuckets.set(anchorId, list);
+  });
+  externalBuckets.forEach((nodes, anchorId) => {
+    const anchor = positions.get(anchorId) ?? { x: 0, y: 0 };
+    const offset = ((nodes.length - 1) * 74) / 2;
+    nodes.forEach((node, index) => {
+      positions.set(node.id(), {
+        x: anchor.x - 230,
+        y: anchor.y + index * 74 - offset,
+      });
+    });
+  });
+
+  centerPositions(positions, orientation);
+  return positions;
+}
+
+export function buildDependencyLaneLayout(
+  cy: cytoscape.Core,
+  orientation: "horizontal" | "vertical",
+): Map<string, cytoscape.Position> {
+  const nodes = cy.nodes().toArray();
+  const nodeById = new Map(nodes.map((node) => [node.id(), node]));
+  const adjacency = new Map<string, Set<string>>();
+  const incomingAttackCount = new Map<string, number>();
+  const outgoingAttackCount = new Map<string, number>();
+
+  nodes.forEach((node) => {
+    adjacency.set(node.id(), new Set());
+    incomingAttackCount.set(node.id(), 0);
+    outgoingAttackCount.set(node.id(), 0);
+  });
+
+  cy.edges().forEach((edge) => {
+    const sourceId = edge.source().id();
+    const targetId = edge.target().id();
+    adjacency.get(sourceId)?.add(targetId);
+    adjacency.get(targetId)?.add(sourceId);
+    if (edge.source().hasClass("attack-node")) {
+      incomingAttackCount.set(targetId, (incomingAttackCount.get(targetId) ?? 0) + 1);
+    }
+    if (edge.target().hasClass("attack-node")) {
+      outgoingAttackCount.set(sourceId, (outgoingAttackCount.get(sourceId) ?? 0) + 1);
+    }
+  });
+
+  const anchorById = new Map<string, number>();
+  nodes.forEach((node) => {
+    if (node.hasClass("attack-node")) {
+      anchorById.set(node.id(), getNodeTacticIndex(node));
+    }
+  });
+
+  for (let iteration = 0; iteration < 6; iteration += 1) {
+    let changed = false;
+    for (const node of nodes) {
+      if (node.hasClass("attack-node")) continue;
+      const samples = [...(adjacency.get(node.id()) ?? [])]
+        .map((neighborId) => anchorById.get(neighborId))
+        .filter((value): value is number => value !== undefined);
+      if (samples.length === 0) continue;
+      const nextAnchor = average(samples);
+      const current = anchorById.get(node.id());
+      if (current === undefined || Math.abs(current - nextAnchor) > 0.01) {
+        anchorById.set(node.id(), nextAnchor);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  const fallbackColumn = Math.max(0, Math.floor((ALLOWED_TACTICS.length - 1) / 2));
+  const entriesByBucket = new Map<string, LaneEntry[]>();
+
+  nodes.forEach((node) => {
+    const anchor = anchorById.get(node.id()) ?? fallbackColumn;
+    const column = Math.max(0, Math.min(ALLOWED_TACTICS.length - 1, Math.round(anchor)));
+    const degree = adjacency.get(node.id())?.size ?? 0;
+    const laneMeta = getLaneMeta(node, incomingAttackCount.get(node.id()) ?? 0, outgoingAttackCount.get(node.id()) ?? 0);
+    const entry: LaneEntry = {
+      id: node.id(),
+      column,
+      lane: laneMeta.lane,
+      offset: laneMeta.offset,
+      rowGap: laneMeta.rowGap,
+      degreeScore: degree,
+    };
+    const key = bucketKey(column, laneMeta.lane);
+    const list = entriesByBucket.get(key) ?? [];
+    list.push(entry);
+    entriesByBucket.set(key, list);
+  });
+
+  for (const entries of entriesByBucket.values()) {
+    entries.sort((left, right) => {
+      if (left.degreeScore !== right.degreeScore) return right.degreeScore - left.degreeScore;
+      return left.id.localeCompare(right.id);
+    });
+  }
+
+  for (let sweep = 0; sweep < 4; sweep += 1) {
+    const currentPositions = computeLanePositions(entriesByBucket, orientation);
+    const bucketEntries = [...entriesByBucket.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+    for (const [bucketId, entries] of bucketEntries) {
+      entries.sort((left, right) => {
+        const leftScore = barycenterScore(left.id, currentPositions, adjacency);
+        const rightScore = barycenterScore(right.id, currentPositions, adjacency);
+        if (Math.abs(leftScore - rightScore) > 0.5) return leftScore - rightScore;
+        if (left.degreeScore !== right.degreeScore) return right.degreeScore - left.degreeScore;
+        return left.id.localeCompare(right.id);
+      });
+      entriesByBucket.set(bucketId, entries);
+    }
+  }
+
+  const positions = computeLanePositions(entriesByBucket, orientation);
+
+  for (const [id, position] of positions) {
+    const node = nodeById.get(id);
+    if (!node) continue;
+    if (node.hasClass("attack-node")) continue;
+    const directAttackNeighbors = [...(adjacency.get(id) ?? [])]
+      .map((neighborId) => nodeById.get(neighborId))
+      .filter((neighbor): neighbor is cytoscape.NodeSingular => Boolean(neighbor?.hasClass("attack-node")));
+    if (directAttackNeighbors.length === 0) continue;
+    const averageNeighborPosition = average(directAttackNeighbors.map((neighbor) => positions.get(neighbor.id())?.y ?? 0));
+    position.y = (position.y * 0.55) + (averageNeighborPosition * 0.45);
+  }
+
+  centerPositions(positions, orientation);
+  return positions;
+}
+
+function getLaneMeta(node: cytoscape.NodeSingular, incomingFromAttack: number, outgoingToAttack: number): {
+  lane: number;
+  offset: number;
+  rowGap: number;
+} {
+  if (node.hasClass("attack-node")) {
+    return { lane: 0, offset: 0, rowGap: 118 };
+  }
+
+  if (node.hasClass("combine-node")) {
+    return { lane: 2, offset: 96, rowGap: 94 };
+  }
+
+  const isExternal = Boolean(node.data("isExternal"));
+  const level = String(node.data("level") ?? "");
+  const bias = outgoingToAttack > incomingFromAttack ? -1 : 1;
+
+  if (isExternal) {
+    return { lane: -2, offset: -92, rowGap: 82 };
+  }
+
+  if (level === "execution_required") {
+    return { lane: bias < 0 ? -1 : 1, offset: bias < 0 ? -46 : 46, rowGap: 84 };
+  }
+
+  return { lane: bias < 0 ? -1 : 1, offset: bias < 0 ? -42 : 42, rowGap: 78 };
+}
+
+function computeLanePositions(
+  entriesByBucket: Map<string, LaneEntry[]>,
+  orientation: "horizontal" | "vertical",
+): Map<string, cytoscape.Position> {
+  const positions = new Map<string, cytoscape.Position>();
+  const columnGap = 260;
+  const laneXOffsetByLane = new Map<number, number>([
+    [-2, -74],
+    [-1, -34],
+    [0, 0],
+    [1, 34],
+    [2, 74],
+  ]);
+
+  for (const entries of entriesByBucket.values()) {
+    if (entries.length === 0) continue;
+    const sample = entries[0];
+    const offset = ((entries.length - 1) * sample.rowGap) / 2;
+    entries.forEach((entry, index) => {
+      const x = entry.column * columnGap + (laneXOffsetByLane.get(entry.lane) ?? 0);
+      const y = entry.offset + index * entry.rowGap - offset;
+      positions.set(entry.id, { x, y });
+    });
+  }
+
+  return positions;
+}
+
+function barycenterScore(
+  nodeId: string,
+  positions: Map<string, cytoscape.Position>,
+  adjacency: Map<string, Set<string>>,
+): number {
+  const neighbors = [...(adjacency.get(nodeId) ?? [])]
+    .map((neighborId) => positions.get(neighborId)?.y)
+    .filter((value): value is number => value !== undefined);
+  if (neighbors.length === 0) return positions.get(nodeId)?.y ?? 0;
+  return average(neighbors);
+}
+
+function bucketKey(column: number, lane: number): string {
+  return `${String(column).padStart(2, "0")}:${String(lane).padStart(2, "0")}`;
 }
 
 function computeMitreComponentRanks(

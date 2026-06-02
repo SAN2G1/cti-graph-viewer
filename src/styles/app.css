@@ -269,3 +269,111 @@ h1 {
     grid-template-columns: minmax(0, 1fr) 320px;
   }
 }
+
+.app-shell-help {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.help-page {
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+  background: #f4f6f8;
+}
+
+.help-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.help-eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.help-hero h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.help-intro {
+  margin: 12px 0 0;
+  max-width: 760px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.help-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.help-nav a {
+  color: #0f172a;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.help-card {
+  padding: 18px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.help-card h3 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.help-list {
+  margin: 0;
+}
+
+.help-list div {
+  padding: 10px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.help-list div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.help-list dt {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.help-list dd {
+  margin: 0;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.diagnostic-meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #64748b;
+}
