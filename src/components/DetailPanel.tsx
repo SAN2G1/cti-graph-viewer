@@ -19,6 +19,7 @@ export function DetailPanel() {
           ["Related IDs", selectedDiagnostic.relatedIds.join(", ") || "-"],
           ["Workbook rows", formatRowRefs(selectedDiagnostic.rowRefs)],
           ["Suggested Fix", selectedDiagnostic.suggestedFix ?? "-"],
+          ["What to inspect", diagnosticTypeHelp(selectedDiagnostic)],
         ]} />
         <p className="diagnostic-message">{selectedDiagnostic.message}</p>
       </aside>
@@ -121,6 +122,28 @@ function RelatedDiagnostics({ diagnostics }: { diagnostics: GraphDiagnostic[] })
       ))}
     </div>
   );
+}
+
+function diagnosticTypeHelp(diagnostic: GraphDiagnostic): string {
+  switch (diagnostic.type) {
+    case "header_mismatch":
+      return "Check the uploaded sheet headers and their exact order.";
+    case "missing_reference":
+    case "wrong_reference_type":
+      return "Compare the referenced IDs with the source table and confirm the target type matches.";
+    case "producer_parser_mismatch":
+    case "requirement_consumer_mismatch":
+      return "Review both sides of the relationship and make sure producer/consumer links are symmetric.";
+    case "invalid_combine":
+    case "combine_cycle":
+    case "multi_requirement_without_combine":
+      return "Inspect the combine members and consumer chain to confirm the AND/OR structure is valid.";
+    case "unreachable_node":
+    case "unproducible_fact":
+      return "Trace the upstream requirements and verify there is at least one valid source path.";
+    default:
+      return "Inspect the referenced rows and compare them with the related IDs shown in the graph.";
+  }
 }
 
 function formatRowRefs(rowRefs: GraphDiagnostic["rowRefs"]): string {

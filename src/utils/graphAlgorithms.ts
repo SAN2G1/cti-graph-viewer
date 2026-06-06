@@ -149,6 +149,7 @@ export function buildDirectedFlowLayout(
 export function buildAttackConditionLayout(
   cy: cytoscape.Core,
   orientation: "horizontal" | "vertical",
+  selectedIds: string[] = [],
 ): Map<string, cytoscape.Position> {
   const attackNodes = cy.nodes('.attack-node').toArray();
   const gateNodes = cy.nodes('.attack-flow-gate').toArray();
@@ -304,8 +305,79 @@ export function buildAttackConditionLayout(
     });
   });
 
+  adjustAttackFocusLayout(cy, positions, selectedIds);
   centerPositions(positions, orientation);
   return positions;
+}
+
+function adjustAttackFocusLayout(
+  cy: cytoscape.Core,
+  positions: Map<string, cytoscape.Position>,
+  selectedIds: string[],
+): void {
+  const focusId = selectedIds.find((id) => cy.getElementById(id).hasClass("attack-node"));
+  if (!focusId) return;
+  const focus = positions.get(focusId);
+  if (!focus) return;
+
+  const focusNode = cy.getElementById(focusId);
+  const inEdges = focusNode.incomers("edge").toArray().filter((ele) => ele.isEdge()) as cytoscape.EdgeSingular[];
+  const outEdges = focusNode.outgoers("edge").toArray().filter((ele) => ele.isEdge()) as cytoscape.EdgeSingular[];
+  const incomingSources = inEdges.map((edge) => edge.source()).filter((node) => node.isNode());
+  const outgoingTargets = outEdges.map((edge) => edge.target()).filter((node) => node.isNode());
+  const incomingGates = incomingSources.filter((node) => node.hasClass("attack-flow-gate"));
+  const incomingDirect = incomingSources.filter((node) => !node.hasClass("attack-flow-gate"));
+  const outgoingGates = outgoingTargets.filter((node) => node.hasClass("attack-flow-gate"));
+  const outgoingDirect = outgoingTargets.filter((node) => !node.hasClass("attack-flow-gate"));
+
+  positions.set(focusId, { x: focus.x, y: 0 });
+
+  distributeAroundFocus(incomingDirect, positions, focus.x - 260, -96, 72);
+  distributeAroundFocus(outgoingDirect, positions, focus.x + 260, 96, 72);
+  distributeAroundFocus(incomingGates, positions, focus.x - 150, -56, 86);
+  distributeAroundFocus(outgoingGates, positions, focus.x + 150, 56, 86);
+
+  incomingGates.forEach((gate) => {
+    const gatePos = positions.get(gate.id());
+    if (!gatePos) return;
+    const sources = gate.incomers("edge").sources().toArray();
+    const sourcePositions = sources.map((source) => positions.get(source.id())).filter((value): value is cytoscape.Position => Boolean(value));
+    if (sourcePositions.length === 0) return;
+    positions.set(gate.id(), {
+      x: Math.min(focus.x - 120, gatePos.x),
+      y: average([0, average(sourcePositions.map((pos) => pos.y))]),
+    });
+  });
+
+  outgoingGates.forEach((gate) => {
+    const gatePos = positions.get(gate.id());
+    if (!gatePos) return;
+    const targets = gate.outgoers("edge").targets().toArray();
+    const targetPositions = targets.map((target) => positions.get(target.id())).filter((value): value is cytoscape.Position => Boolean(value));
+    if (targetPositions.length === 0) return;
+    positions.set(gate.id(), {
+      x: Math.max(focus.x + 120, gatePos.x),
+      y: average([0, average(targetPositions.map((pos) => pos.y))]),
+    });
+  });
+}
+
+function distributeAroundFocus(
+  nodes: cytoscape.NodeSingular[],
+  positions: Map<string, cytoscape.Position>,
+  x: number,
+  centerY: number,
+  rowGap: number,
+): void {
+  if (nodes.length === 0) return;
+  const sorted = [...nodes].sort((left, right) => left.id().localeCompare(right.id()));
+  const offset = ((sorted.length - 1) * rowGap) / 2;
+  sorted.forEach((node, index) => {
+    positions.set(node.id(), {
+      x,
+      y: centerY + index * rowGap - offset,
+    });
+  });
 }
 
 export function buildDependencyLaneLayout(

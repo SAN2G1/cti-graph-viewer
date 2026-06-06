@@ -22,6 +22,8 @@ export function Toolbar() {
   const requestLayout = useGraphStore((state) => state.requestLayout);
   const requestFlowLayout = useGraphStore((state) => state.requestFlowLayout);
   const requestFit = useGraphStore((state) => state.requestFit);
+  const showLegend = useGraphStore((state) => state.showLegend);
+  const setShowLegend = useGraphStore((state) => state.setShowLegend);
   const resetHighlight = useGraphStore((state) => state.resetHighlight);
 
   return (
@@ -52,6 +54,9 @@ export function Toolbar() {
               </button>
               <button type="button" onClick={resetHighlight}>
                 Reset
+              </button>
+              <button type="button" onClick={() => setShowLegend(!showLegend)}>
+                {showLegend ? "Hide Legend" : "Show Legend"}
               </button>
               <button type="button" disabled={!parsed} onClick={() => parsed && exportJson(parsed)}>
                 Export JSON

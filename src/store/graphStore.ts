@@ -18,6 +18,7 @@ interface GraphState {
   severityFilter: DiagnosticSeverity | "all";
   showExternalFacts: boolean;
   showExecutionRequiredFacts: boolean;
+  showLegend: boolean;
   cy: cytoscape.Core | null;
   layoutVersion: number;
   flowLayoutVersion: number;
@@ -33,6 +34,7 @@ interface GraphState {
   setSeverityFilter: (severity: DiagnosticSeverity | "all") => void;
   setShowExternalFacts: (show: boolean) => void;
   setShowExecutionRequiredFacts: (show: boolean) => void;
+  setShowLegend: (show: boolean) => void;
   resetHighlight: () => void;
   setCy: (cy: cytoscape.Core | null) => void;
   requestLayout: () => void;
@@ -52,6 +54,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   severityFilter: "all",
   showExternalFacts: true,
   showExecutionRequiredFacts: true,
+  showLegend: true,
   cy: null,
   layoutVersion: 0,
   flowLayoutVersion: 0,
@@ -64,7 +67,11 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   },
   setSelectedIds: (selectedIds) => set({ selectedIds, selectedDiagnostic: null }),
   setSelectedDiagnostic: (selectedDiagnostic) =>
-    set({ selectedDiagnostic, selectedIds: selectedDiagnostic?.relatedIds ?? [] }),
+    set({
+      selectedDiagnostic,
+      selectedIds: selectedDiagnostic?.relatedIds ?? [],
+      viewMode: selectedDiagnostic ? "diagnostics" : get().viewMode,
+    }),
   setScreen: (screen) => set({ screen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setSearchTerm: (searchTerm) => set({ searchTerm }),
@@ -72,6 +79,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setSeverityFilter: (severityFilter) => set({ severityFilter }),
   setShowExternalFacts: (showExternalFacts) => set({ showExternalFacts }),
   setShowExecutionRequiredFacts: (showExecutionRequiredFacts) => set({ showExecutionRequiredFacts }),
+  setShowLegend: (showLegend) => set({ showLegend }),
   resetHighlight: () => set({ selectedIds: [], selectedDiagnostic: null, searchTerm: "" }),
   setCy: (cy) => set({ cy }),
   requestLayout: () => set({ layoutVersion: get().layoutVersion + 1 }),

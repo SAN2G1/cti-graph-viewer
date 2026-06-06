@@ -14,18 +14,6 @@ export function GraphCanvas() {
   const didRunInitialLayoutRef = useRef(false);
   const previousViewModeRef = useRef<string | null>(null);
   const previousSelectionKeyRef = useRef("");
-  const dragFollowRef = useRef<{
-    lastPosition: cytoscape.Position;
-    levels: Array<{
-      nodes: cytoscape.NodeCollection;
-      factor: number;
-    }>;
-    pendingDelta: cytoscape.Position;
-    frameId: number | null;
-    active: boolean;
-    engaged: boolean;
-    accumulatedDistance: number;
-  } | null>(null);
   const parsed = useGraphStore((state) => state.parsed);
   const selectedIds = useGraphStore((state) => state.selectedIds);
   const viewMode = useGraphStore((state) => state.viewMode);
@@ -38,6 +26,7 @@ export function GraphCanvas() {
   const flowLayoutVersion = useGraphStore((state) => state.flowLayoutVersion);
   const flowLayoutMode = useGraphStore((state) => state.flowLayoutMode);
   const fitVersion = useGraphStore((state) => state.fitVersion);
+  const showLegend = useGraphStore((state) => state.showLegend);
   const setCy = useGraphStore((state) => state.setCy);
   const setSelectedIds = useGraphStore((state) => state.setSelectedIds);
 
@@ -63,7 +52,7 @@ export function GraphCanvas() {
       wheelSensitivity: 0.75,
       minZoom: 0.08,
       maxZoom: 4,
-      autoungrabify: false,
+      autoungrabify: true,
     });
     cy.on("tap", "node", (event) => {
       if (event.target.hasClass("tactic-band")) return;
@@ -72,53 +61,6 @@ export function GraphCanvas() {
     cy.on("tap", (event) => {
       if (event.target === cy) setSelectedIds([]);
     });
-    const setupDragFollow = (event: cytoscape.EventObject) => {
-      const node = event.target;
-      if (node.hasClass("tactic-band")) return;
-      dragFollowRef.current = {
-        lastPosition: { ...node.position() },
-        levels: [],
-        pendingDelta: { x: 0, y: 0 },
-        frameId: null,
-        active: true,
-        engaged: false,
-        accumulatedDistance: 0,
-      };
-    };
-    cy.on("grab", "node", setupDragFollow);
-    cy.on("grabon", "node", setupDragFollow);
-    cy.on("drag", "node", (event) => {
-      const follow = dragFollowRef.current;
-      if (!follow) return;
-      const node = event.target;
-      if (node.hasClass("tactic-band")) return;
-      clampNodeToTacticBand(node);
-      const position = node.position();
-      const delta = {
-        x: position.x - follow.lastPosition.x,
-        y: position.y - follow.lastPosition.y,
-      };
-      if (Math.abs(delta.x) < 0.01 && Math.abs(delta.y) < 0.01) return;
-
-      follow.lastPosition = { ...position };
-      if (!follow.engaged) {
-        follow.accumulatedDistance += Math.hypot(delta.x, delta.y);
-        if (follow.accumulatedDistance < 6) return;
-        follow.engaged = true;
-        follow.levels = collectDownstreamLevels(node, 5);
-      }
-
-      follow.pendingDelta.x += delta.x;
-      follow.pendingDelta.y += delta.y;
-      scheduleDragFollowFrame(cy, dragFollowRef);
-    });
-    const clearDragFollow = () => {
-      if (dragFollowRef.current) dragFollowRef.current.active = false;
-    };
-    cy.on("free", "node", clearDragFollow);
-    cy.on("freeon", "node", clearDragFollow);
-    cy.on("dragfree", "node", clearDragFollow);
-    cy.on("dragfreeon", "node", clearDragFollow);
     cy.on("mouseover", "edge", (event) => {
       const edge = event.target;
       const hoverLabel = edge.data("hoverLabel") as string | undefined;
@@ -163,10 +105,10 @@ export function GraphCanvas() {
         return position ? { ...element, position } : element;
       }),
     );
-    cy.nodes().grabify();
+    cy.nodes().ungrabify();
     const viewModeChanged = previousViewModeRef.current !== viewMode;
     if (cy.nodes().length > 0 && (!didRunInitialLayoutRef.current || positionedNodeCount === 0 || viewModeChanged)) {
-      runLayout(cy, viewMode);
+      runLayout(cy, viewMode, selectedIds);
       didRunInitialLayoutRef.current = true;
     }
     previousViewModeRef.current = viewMode;
@@ -176,6 +118,7 @@ export function GraphCanvas() {
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
+    if (viewMode === "attack") runAttackFlowLayout(cy, selectedIds, { fitView: false });
     const selectionKey = selectedIds.join("|");
     applyHighlight(cy, selectedIds, viewMode, parsed?.diagnostics ?? [], {
       animateSelection: selectionKey !== previousSelectionKeyRef.current,
@@ -185,7 +128,7 @@ export function GraphCanvas() {
 
   useEffect(() => {
     const cy = cyRef.current;
-    if (cy && layoutVersion > 0) runLayout(cy, viewMode);
+    if (cy && layoutVersion > 0) runLayout(cy, viewMode, selectedIds);
   }, [layoutVersion, viewMode]);
 
   useEffect(() => {
@@ -202,15 +145,16 @@ export function GraphCanvas() {
   return (
     <section className="graph-section">
       <div ref={containerRef} className="graph-canvas" />
+      {showLegend ? <GraphLegend viewMode={viewMode} /> : null}
     </section>
   );
 }
 
-function runLayout(cy: cytoscape.Core, viewMode: string): void {
+function runLayout(cy: cytoscape.Core, viewMode: string, selectedIds: string[]): void {
   clearTacticBands(cy);
 
   if (viewMode === "attack") {
-    runAttackFlowLayout(cy);
+    runAttackFlowLayout(cy, selectedIds, { fitView: true });
     return;
   }
 
@@ -228,10 +172,16 @@ function runLayout(cy: cytoscape.Core, viewMode: string): void {
   cy.fit(undefined, 48);
 }
 
-function runAttackFlowLayout(cy: cytoscape.Core): void {
+function runAttackFlowLayout(
+  cy: cytoscape.Core,
+  selectedIds: string[],
+  options: {
+    fitView?: boolean;
+  } = {},
+): void {
   clearTacticBands(cy);
   const orientation = cy.width() >= cy.height() ? "horizontal" : "vertical";
-  const positions = buildAttackConditionLayout(cy, orientation);
+  const positions = buildAttackConditionLayout(cy, orientation, selectedIds);
 
   cy.batch(() => {
     for (const [id, position] of positions) {
@@ -241,7 +191,7 @@ function runAttackFlowLayout(cy: cytoscape.Core): void {
   });
 
   addTacticBands(cy, orientation);
-  cy.fit(undefined, 56);
+  if (options.fitView !== false) cy.fit(undefined, 56);
 }
 
 function runFlowLayout(cy: cytoscape.Core, mode: "default" | "mitre"): void {
@@ -266,9 +216,6 @@ function runFlowLayout(cy: cytoscape.Core, mode: "default" | "mitre"): void {
 }
 
 function clearTacticBands(cy: cytoscape.Core): void {
-  cy.nodes().forEach((node) => {
-    node.scratch("_tacticBounds", undefined);
-  });
   cy.nodes(".tactic-band").remove();
 }
 
@@ -326,15 +273,6 @@ function addTacticBands(cy: cytoscape.Core, orientation: "horizontal" | "vertica
     }
     previousEnd = spec.center[primary] + size / 2;
 
-    const tacticBounds = {
-      minX: spec.center.x - spec.width / 2 + 52,
-      maxX: spec.center.x + spec.width / 2 - 52,
-      minY: spec.center.y - spec.height / 2 + 42,
-      maxY: spec.center.y + spec.height / 2 - 42,
-    };
-    spec.tacticNodes.forEach((node) => {
-      node.scratch("_tacticBounds", tacticBounds);
-    });
 
     return {
       data: {
@@ -355,112 +293,6 @@ function addTacticBands(cy: cytoscape.Core, orientation: "horizontal" | "vertica
   bands.ungrabify();
   bands.unselectify();
 }
-
-function collectDownstreamLevels(
-  startNode: cytoscape.NodeSingular,
-  maxDepth: number,
-): Array<{ nodes: cytoscape.NodeCollection; factor: number }> {
-  const factors = [0.28, 0.18, 0.12, 0.08, 0.05];
-  const cy = startNode.cy();
-  const levels: Array<{ nodes: cytoscape.NodeCollection; factor: number }> = [];
-  let frontier: cytoscape.NodeCollection = cy.collection(startNode);
-  let visited: cytoscape.CollectionReturnValue = cy.collection(startNode);
-
-  for (let depth = 0; depth < maxDepth; depth += 1) {
-    const next = outgoingTargets(frontier).difference(visited);
-    if (next.empty()) break;
-    levels.push({ nodes: next, factor: factors[depth] ?? 0.04 });
-    visited = visited.union(next);
-    frontier = next;
-  }
-
-  return levels;
-}
-
-function outgoingTargets(nodes: cytoscape.NodeCollection): cytoscape.NodeCollection {
-  const sourceIds = new Set<string>();
-  nodes.forEach((node) => {
-    sourceIds.add(node.id());
-  });
-
-  return nodes
-    .connectedEdges()
-    .filter((edge: cytoscape.EdgeSingular) => sourceIds.has(edge.source().id()))
-    .targets();
-}
-
-function scheduleDragFollowFrame(
-  cy: cytoscape.Core,
-  dragFollowRef: React.MutableRefObject<{
-    lastPosition: cytoscape.Position;
-    levels: Array<{ nodes: cytoscape.NodeCollection; factor: number }>;
-    pendingDelta: cytoscape.Position;
-    frameId: number | null;
-    active: boolean;
-    engaged: boolean;
-    accumulatedDistance: number;
-  } | null>,
-): void {
-  const follow = dragFollowRef.current;
-  if (!follow || follow.frameId !== null) return;
-
-  follow.frameId = window.requestAnimationFrame(() => {
-    const currentFollow = dragFollowRef.current;
-    if (!currentFollow) return;
-    currentFollow.frameId = null;
-
-    const step = {
-      x: currentFollow.pendingDelta.x * 0.42,
-      y: currentFollow.pendingDelta.y * 0.42,
-    };
-    currentFollow.pendingDelta.x -= step.x;
-    currentFollow.pendingDelta.y -= step.y;
-
-    if (Math.abs(step.x) >= 0.02 || Math.abs(step.y) >= 0.02) {
-      cy.batch(() => {
-        for (const level of currentFollow.levels) {
-          moveNodes(level.nodes, step, level.factor);
-        }
-      });
-    }
-
-    const hasPending = Math.abs(currentFollow.pendingDelta.x) >= 0.03 || Math.abs(currentFollow.pendingDelta.y) >= 0.03;
-    if (hasPending) {
-      scheduleDragFollowFrame(cy, dragFollowRef);
-    } else if (!currentFollow.active) {
-      dragFollowRef.current = null;
-    }
-  });
-}
-
-function moveNodes(nodes: cytoscape.NodeCollection, delta: cytoscape.Position, factor: number): void {
-  nodes.forEach((node) => {
-    if (node.grabbed()) return;
-    const position = node.position();
-    node.position({
-      x: position.x + delta.x * factor,
-      y: position.y + delta.y * factor,
-    });
-    clampNodeToTacticBand(node);
-  });
-}
-
-function clampNodeToTacticBand(node: cytoscape.NodeSingular): void {
-  const bounds = node.scratch("_tacticBounds") as
-    | { minX: number; maxX: number; minY: number; maxY: number }
-    | undefined;
-  if (!bounds) return;
-
-  const position = node.position();
-  const nextPosition = {
-    x: Math.min(bounds.maxX, Math.max(bounds.minX, position.x)),
-    y: Math.min(bounds.maxY, Math.max(bounds.minY, position.y)),
-  };
-  if (nextPosition.x !== position.x || nextPosition.y !== position.y) {
-    node.position(nextPosition);
-  }
-}
-
 
 function applyHighlight(
   cy: cytoscape.Core,
@@ -504,9 +336,48 @@ function applyHighlight(
   twoHop.addClass("two-hop");
 
   const first = selected.first();
-  if (first.nonempty() && options?.animateSelection !== false) {
-    cy.animate({ center: { eles: first }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 250 });
+  if (options?.animateSelection !== false) {
+    if (selected.length > 1) cy.animate({ fit: { eles: selected.union(adjacentNodes), padding: 72 } }, { duration: 250 });
+    else if (first.nonempty()) cy.animate({ center: { eles: first }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 250 });
   }
+}
+
+
+function GraphLegend({ viewMode }: { viewMode: string }) {
+  const items = viewMode === "attack"
+    ? [
+        ["legend-line incoming", "Selected incoming"],
+        ["legend-line outgoing", "Selected outgoing"],
+        ["legend-line fact", "Fact condition"],
+        ["legend-line combine", "Gate output"],
+        ["legend-swatch external", "External input"],
+        ["legend-swatch and", "AND gate"],
+        ["legend-swatch or", "OR gate"],
+      ]
+    : [
+        ["legend-line incoming", "Selected incoming"],
+        ["legend-line outgoing", "Selected outgoing"],
+        ["legend-line combine", "Combine output"],
+        ["legend-swatch fact", "Fact"],
+        ["legend-swatch external", "External fact"],
+        ["legend-swatch attack", "Attack node"],
+        ["legend-swatch and", "AND gate"],
+        ["legend-swatch or", "OR gate"],
+      ];
+
+  return (
+    <aside className="graph-legend">
+      <h3>Legend</h3>
+      <div className="graph-legend-list">
+        {items.map(([className, label]) => (
+          <div key={label} className="graph-legend-item">
+            <span className={className} />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
 }
 
 const graphStyle = [
