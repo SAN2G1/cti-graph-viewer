@@ -83,76 +83,18 @@ export interface Combine {
   rowIndex: number;
 }
 
-export type DiagnosticSeverity = "error" | "warning" | "info";
-
-export type DiagnosticType =
-  | "header_mismatch"
-  | "invalid_id"
-  | "duplicate_id"
-  | "invalid_tactic"
-  | "invalid_operator"
-  | "invalid_is_external"
-  | "invalid_level"
-  | "invalid_relationship_format"
-  | "invalid_relationship_verb"
-  | "missing_reference"
-  | "wrong_reference_type"
-  | "producer_parser_mismatch"
-  | "requirement_consumer_mismatch"
-  | "invalid_combine"
-  | "combine_cycle"
-  | "multi_requirement_without_combine"
-  | "external_producer_conflict"
-  | "internal_without_producer"
-  | "unreachable_node"
-  | "unproducible_fact"
-  | "technique_gt_missing_in_answer"
-  | "technique_gt_extra_in_answer"
-  | "technique_name_mismatch";
-
-export interface GraphDiagnostic {
-  id: string;
-  checkNo: "0" | "1" | "1b" | "2" | "3" | "3b" | "4" | "5" | "6" | "7";
-  severity: DiagnosticSeverity;
-  type: DiagnosticType;
-  message: string;
-  relatedIds: string[];
-  rowRefs?: Array<{
-    table: "node" | "fact" | "combine" | "gt";
-    rowIndex: number;
-    column?: string;
-  }>;
-  suggestedFix?: string;
-}
-
 export interface ParsedWorkbook {
   nodes: AttackNode[];
   facts: Fact[];
   combines: Combine[];
-  diagnostics: GraphDiagnostic[];
-  headerDiagnostics?: GraphDiagnostic[];
 }
 
-export interface GtTechnique {
-  techniqueId: string;
-  techniqueName: string;
-  rowIndex: number;
-}
-
-export interface GtTable {
-  techniques: GtTechnique[];
-}
-
-export type ViewMode = "full" | "attack" | "focus" | "diagnostics";
+export type ViewMode = "full" | "attack";
 
 export interface GraphViewOptions {
   viewMode: ViewMode;
-  selectedIds?: string[];
   searchTerm?: string;
-  tacticFilter?: string;
-  severityFilter?: DiagnosticSeverity | "all";
   showExternalFacts?: boolean;
-  showExecutionRequiredFacts?: boolean;
 }
 
 export interface GraphEdgeData {

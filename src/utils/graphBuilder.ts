@@ -1,6 +1,6 @@
 import type cytoscape from "cytoscape";
 import type { Combine, Fact, GraphEdgeData, GraphViewOptions, ParsedWorkbook } from "../types/graph";
-import { getTwoHopIds, truncateLabel } from "./graphAlgorithms";
+import { truncateLabel } from "./graphAlgorithms";
 
 type EdgeMap = Map<string, GraphEdgeData>;
 
@@ -9,22 +9,10 @@ export function buildCytoscapeElements(
   options: GraphViewOptions,
 ): cytoscape.ElementDefinition[] {
   const full = options.viewMode === "attack" ? buildAttackFlowElements(input, options) : buildFullElements(input, options);
-  const searched = applySearchAndFilters(full, input, options);
-
-  if (options.viewMode === "focus" && options.selectedIds?.length) {
-    const visibleIds = getTwoHopIds(searched, options.selectedIds);
-    return searched.filter((element) => {
-      const data = element.data as Record<string, unknown>;
-      if (data.source && data.target) return visibleIds.has(String(data.source)) && visibleIds.has(String(data.target));
-      return visibleIds.has(String(data.id));
-    });
-  }
-
-  return searched;
+  return applySearchAndFilters(full, input, options);
 }
 
 function buildFullElements(input: ParsedWorkbook, options: GraphViewOptions): cytoscape.ElementDefinition[] {
-  const diagnosticIds = new Set(input.diagnostics.flatMap((diagnostic) => diagnostic.relatedIds));
   const elements: cytoscape.ElementDefinition[] = [];
 
   for (const node of input.nodes) {
@@ -32,29 +20,27 @@ function buildFullElements(input: ParsedWorkbook, options: GraphViewOptions): cy
       data: {
         id: node.id,
         entityType: "node",
-        label: `${node.id}\n${node.techniqueId}\n${truncateLabel(node.techniqueName)}`,
+        label: `${node.id}\n${node.techniqueId}\n${truncateLabel(node.techniqueName, 13)}`,
+        fullLabel: `${node.id}\n${node.techniqueId}\n${node.techniqueName}`,
         searchText: `${node.id} ${node.techniqueId} ${node.techniqueName} ${node.behaviorSummary}`.toLowerCase(),
         tactic: node.tactic,
-        hasDiagnostic: diagnosticIds.has(node.id),
       },
-      classes: classNames(["attack-node", diagnosticIds.has(node.id) && "has-diagnostic"]),
+      classes: "attack-node",
     });
   }
 
   for (const fact of input.facts) {
-    if (fact.isExternal && options.showExternalFacts === false) continue;
-    if (fact.level === "execution_required" && options.showExecutionRequiredFacts === false) continue;
     elements.push({
       data: {
         id: fact.id,
         entityType: "fact",
-        label: `${fact.id}\n${truncateLabel(fact.name)}`,
+        label: `${fact.id}\n${truncateLabel(fact.name, 12)}`,
+        fullLabel: `${fact.id}\n${fact.name}`,
         searchText: `${fact.id} ${fact.name} ${fact.description}`.toLowerCase(),
         isExternal: fact.isExternal,
         level: fact.level,
-        hasDiagnostic: diagnosticIds.has(fact.id),
       },
-      classes: classNames(["fact-node", fact.isExternal && "external-fact", fact.level === "execution_required" && "execution-required", diagnosticIds.has(fact.id) && "has-diagnostic"]),
+      classes: classNames(["fact-node", fact.isExternal && "external-fact", fact.level === "execution_required" && "execution-required"]),
     });
   }
 
@@ -64,31 +50,58 @@ function buildFullElements(input: ParsedWorkbook, options: GraphViewOptions): cy
       data: {
         id: combine.id,
         entityType: "combine",
-        label: `${combine.id}\n${combine.operator}\n${truncateLabel(combine.label)}`,
+        label: `${combine.id}\n${combine.operator}`,
         searchText: `${combine.id} ${combine.operator} ${combine.label}`.toLowerCase(),
         operator: combine.operator,
         nested: nestedCombines.has(combine.id),
-        hasDiagnostic: diagnosticIds.has(combine.id),
       },
-      classes: classNames(["combine-node", combine.operator === "AND" ? "and-combine" : "or-combine", nestedCombines.has(combine.id) && "nested-combine", diagnosticIds.has(combine.id) && "has-diagnostic"]),
+      classes: classNames(["combine-node", combine.operator === "AND" ? "and-combine" : "or-combine", nestedCombines.has(combine.id) && "nested-combine"]),
     });
+  }
+
+  // A fact that reaches a node through a combine must not also link to that node
+  // directly — keep only the combine route (combine_member -> combine_output).
+  const combineById = new Map(input.combines.map((combine) => [combine.id, combine]));
+  const terminalNodeOf = (combineId: string): string | undefined => {
+    const seen = new Set<string>();
+    let consumer = combineById.get(combineId)?.consumer[0];
+    while (consumer && consumer.startsWith("C") && combineById.has(consumer) && !seen.has(consumer)) {
+      seen.add(consumer);
+      consumer = combineById.get(consumer)?.consumer[0];
+    }
+    return consumer;
+  };
+  const routedThroughCombine = new Set<string>(); // `${factId}->${nodeId}`
+  for (const combine of input.combines) {
+    const terminal = terminalNodeOf(combine.id);
+    if (!terminal || !terminal.startsWith("N")) continue;
+    for (const member of combine.members) {
+      if (member.startsWith("F")) routedThroughCombine.add(`${member}->${terminal}`);
+    }
   }
 
   const edges = new Map<string, GraphEdgeData>();
   for (const node of input.nodes) {
     node.parsers.forEach((factId) => addEdge(edges, node.id, factId, "parses"));
-    node.requirements.forEach((requirementId) => addEdge(edges, requirementId, node.id, "requires"));
+    node.requirements.forEach((requirementId) => {
+      if (routedThroughCombine.has(`${requirementId}->${node.id}`)) return;
+      addEdge(edges, requirementId, node.id, "requires");
+    });
   }
   for (const fact of input.facts) {
     fact.producers.forEach((nodeId) => addEdge(edges, nodeId, fact.id, "produces"));
-    fact.consumers.forEach((nodeId) => addEdge(edges, fact.id, nodeId, "consumes"));
+    fact.consumers.forEach((nodeId) => {
+      if (routedThroughCombine.has(`${fact.id}->${nodeId}`)) return;
+      addEdge(edges, fact.id, nodeId, "consumes");
+    });
   }
   for (const combine of input.combines) {
     combine.members.forEach((memberId) => addEdge(edges, memberId, combine.id, "combine_member"));
     combine.consumer.forEach((consumerId) => addEdge(edges, combine.id, consumerId, "combine_output"));
   }
 
-  elements.push(...edgeElements(edges, diagnosticIds, factNameMap(input)));
+  // Full view shows no edge text at all.
+  elements.push(...edgeElements(edges, factNameMap(input), false));
   return removeDanglingEdges(elements);
 }
 
@@ -97,7 +110,8 @@ function buildAttackFlowElements(input: ParsedWorkbook, options: GraphViewOption
     data: {
       id: node.id,
       entityType: "node",
-      label: `${node.id}\n${node.techniqueId}\n${truncateLabel(node.techniqueName)}`,
+      label: `${node.id}\n${node.techniqueId}\n${truncateLabel(node.techniqueName, 13)}`,
+      fullLabel: `${node.id}\n${node.techniqueId}\n${node.techniqueName}`,
       searchText: `${node.id} ${node.techniqueId} ${node.techniqueName} ${node.behaviorSummary}`.toLowerCase(),
       tactic: node.tactic,
     },
@@ -129,7 +143,8 @@ function buildAttackFlowElements(input: ParsedWorkbook, options: GraphViewOption
         data: {
           id: externalId,
           entityType: "fact",
-          label: `${fact.id}\nexternal`,
+          label: fact.id,
+          fullLabel: `${fact.id}\n${fact.name}`,
           searchText: `${fact.id} ${fact.name} external ${fact.description}`.toLowerCase(),
           isExternal: true,
           level: fact.level,
@@ -149,7 +164,7 @@ function buildAttackFlowElements(input: ParsedWorkbook, options: GraphViewOption
         data: {
           id: combine.id,
           entityType: "combine",
-          label: combine.operator,
+          label: `${combine.id}\n${combine.operator}`,
           searchText: `${combine.id} ${combine.operator} ${combine.label}`.toLowerCase(),
           operator: combine.operator,
           detailLabel: combine.label,
@@ -187,13 +202,12 @@ function buildAttackFlowElements(input: ParsedWorkbook, options: GraphViewOption
     node.requirements.forEach((requirementId) => connectRequirement(requirementId, node.id));
   });
 
-  elements.push(...edgeElements(edges, new Set(), factNameMap(input)));
+  elements.push(...edgeElements(edges, factNameMap(input)));
   return removeDanglingEdges(elements);
 }
 
 function shouldIncludeAttackFact(fact: Fact, options: GraphViewOptions): boolean {
   if (fact.isExternal && options.showExternalFacts === false) return false;
-  if (fact.level === "execution_required" && options.showExecutionRequiredFacts === false) return false;
   return true;
 }
 
@@ -202,10 +216,6 @@ function applySearchAndFilters(
   input: ParsedWorkbook,
   options: GraphViewOptions,
 ): cytoscape.ElementDefinition[] {
-  const severityIds =
-    options.severityFilter && options.severityFilter !== "all"
-      ? new Set(input.diagnostics.filter((diagnostic) => diagnostic.severity === options.severityFilter).flatMap((diagnostic) => diagnostic.relatedIds))
-      : undefined;
   const search = options.searchTerm?.trim().toLowerCase();
   const matchingIds = new Set<string>();
 
@@ -213,13 +223,11 @@ function applySearchAndFilters(
     const data = element.data as Record<string, unknown>;
     if (data.source || !data.id) continue;
     const id = String(data.id);
-    if (options.tacticFilter && data.entityType === "node" && data.tactic !== options.tacticFilter) continue;
-    if (severityIds && !severityIds.has(id)) continue;
     if (search && !String(data.searchText ?? "").includes(search)) continue;
     matchingIds.add(id);
   }
 
-  if (!search && !severityIds && !options.tacticFilter) return elements;
+  if (!search) return elements;
   if (matchingIds.size === 0) return [];
 
   const visibleIds = expandVisibleContext(elements, matchingIds, options.viewMode === "attack" ? 2 : 1);
@@ -293,21 +301,23 @@ function addEdge(edges: EdgeMap, source: string, target: string, edgeType: strin
 
 function edgeElements(
   edges: EdgeMap,
-  diagnosticIds: Set<string>,
   factNames: Map<string, string>,
+  showText = true,
 ): cytoscape.ElementDefinition[] {
   return [...edges.values()].map((edge) => ({
     data: {
       ...edge,
-      displayLabel: edgeDisplayLabel(edge),
-      hoverLabel: edgeHoverLabel(edge, factNames),
+      // When text is off, blank out every label source so neither the resting
+      // label nor the hover/mouseout restore can surface relationship text.
+      label: showText ? edge.label : "",
+      displayLabel: showText ? edgeDisplayLabel(edge) : "",
+      hoverLabel: showText ? edgeHoverLabel(edge, factNames) : undefined,
     },
     classes: classNames([
       "dependency-edge",
       edge.edgeTypes.some((edgeType) => edgeType.startsWith("F")) && "fact-condition-edge",
       edge.edgeTypes.includes("combine_member") && "combine-member-edge",
       edge.edgeTypes.includes("combine_output") && "combine-output-edge",
-      (diagnosticIds.has(edge.source) || diagnosticIds.has(edge.target)) && "diagnostic-edge",
     ]),
   }));
 }

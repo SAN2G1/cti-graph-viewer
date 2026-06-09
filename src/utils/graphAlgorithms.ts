@@ -14,35 +14,6 @@ type LaneEntry = {
   degreeScore: number;
 };
 
-export function getTwoHopIds(elements: cytoscape.ElementDefinition[], selectedIds: string[]): Set<string> {
-  const adjacency = new Map<string, Set<string>>();
-  for (const element of elements) {
-    const data = element.data as Record<string, unknown>;
-    if (data.source && data.target) {
-      const source = String(data.source);
-      const target = String(data.target);
-      addNeighbor(adjacency, source, target);
-      addNeighbor(adjacency, target, source);
-    } else if (data.id) {
-      adjacency.set(String(data.id), adjacency.get(String(data.id)) ?? new Set());
-    }
-  }
-
-  const visited = new Set<string>(selectedIds);
-  let frontier = new Set<string>(selectedIds);
-  for (let depth = 0; depth < 2; depth += 1) {
-    const next = new Set<string>();
-    for (const id of frontier) {
-      for (const neighbor of adjacency.get(id) ?? []) {
-        if (!visited.has(neighbor)) next.add(neighbor);
-        visited.add(neighbor);
-      }
-    }
-    frontier = next;
-  }
-  return visited;
-}
-
 export function truncateLabel(text: string, max = 28): string {
   if (text.length <= max) return text;
   return `${text.slice(0, Math.max(0, max - 1))}…`;

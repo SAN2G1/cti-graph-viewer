@@ -1,91 +1,59 @@
-import { FileUploadPanel } from "./FileUploadPanel";
 import { FilterPanel } from "./FilterPanel";
 import { SearchBox } from "./SearchBox";
+import { Icon } from "./icons";
 import { useGraphStore } from "../store/graphStore";
 import type { ViewMode } from "../types/graph";
-import { exportJson, exportPng } from "../utils/exportUtils";
+import { exportPng } from "../utils/exportUtils";
 
 const viewModes: Array<{ value: ViewMode; label: string }> = [
   { value: "full", label: "Full Dependency" },
   { value: "attack", label: "Attack Flow" },
-  { value: "focus", label: "Focus" },
-  { value: "diagnostics", label: "Diagnostics" },
 ];
 
 export function Toolbar() {
-  const parsed = useGraphStore((state) => state.parsed);
   const cy = useGraphStore((state) => state.cy);
-  const screen = useGraphStore((state) => state.screen);
   const viewMode = useGraphStore((state) => state.viewMode);
-  const setScreen = useGraphStore((state) => state.setScreen);
   const setViewMode = useGraphStore((state) => state.setViewMode);
   const requestLayout = useGraphStore((state) => state.requestLayout);
   const requestFlowLayout = useGraphStore((state) => state.requestFlowLayout);
   const requestFit = useGraphStore((state) => state.requestFit);
   const showLegend = useGraphStore((state) => state.showLegend);
   const setShowLegend = useGraphStore((state) => state.setShowLegend);
-  const resetHighlight = useGraphStore((state) => state.resetHighlight);
+  const resetView = useGraphStore((state) => state.resetView);
 
   return (
     <header className="app-header">
       <div className="title-row">
-        <div>
-          <h1>Interactive CTI Dependency Hypergraph Viewer</h1>
-        </div>
         <div className="action-row">
-          {screen === "viewer" ? (
-            <>
-              <select value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)}>
-                {viewModes.map((mode) => (
-                  <option key={mode.value} value={mode.value}>
-                    {mode.label}
-                  </option>
-                ))}
-              </select>
-              <SearchBox />
-              <button type="button" onClick={requestLayout}>
-                Auto Layout
-              </button>
-              <button type="button" onClick={requestFlowLayout}>
-                Auto Flow Layout
-              </button>
-              <button type="button" onClick={requestFit}>
-                Fit View
-              </button>
-              <button type="button" onClick={resetHighlight}>
-                Reset
-              </button>
-              <button type="button" onClick={() => setShowLegend(!showLegend)}>
-                {showLegend ? "Hide Legend" : "Show Legend"}
-              </button>
-              <button type="button" disabled={!parsed} onClick={() => parsed && exportJson(parsed)}>
-                Export JSON
-              </button>
-              <button type="button" disabled={!cy} onClick={() => exportPng(cy)}>
-                Export PNG
-              </button>
-              <button type="button" onClick={() => setScreen("help")}>
-                Help
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" onClick={() => setScreen("viewer")}>
-                Back to Viewer
-              </button>
-              <button type="button" onClick={resetHighlight}>
-                Reset Selection
-              </button>
-            </>
-          )}
+          <select value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)}>
+            {viewModes.map((mode) => (
+              <option key={mode.value} value={mode.value}>
+                {mode.label}
+              </option>
+            ))}
+          </select>
+          <SearchBox />
+          <button type="button" className="tb-btn" onClick={requestLayout} title="현재 뷰 기준 자동 배치">
+            <Icon name="grid" /> Auto Layout
+          </button>
+          <button type="button" className="tb-btn" onClick={requestFlowLayout} title="흐름 기준 배치">
+            <Icon name="flow" /> Flow Layout
+          </button>
+          <button type="button" className="tb-btn" onClick={requestFit} title="화면에 맞춤">
+            <Icon name="fit" /> Fit
+          </button>
+          <button type="button" className="tb-btn" onClick={resetView} title="Reset selection, search, and node positions">
+            <Icon name="reset" /> Reset
+          </button>
+          <button type="button" className="tb-btn" onClick={() => setShowLegend(!showLegend)} title="범례 표시 전환">
+            <Icon name="legend" /> Legend
+          </button>
+          <button type="button" className="tb-btn" disabled={!cy} onClick={() => exportPng(cy)} title="그래프 PNG 저장">
+            <Icon name="image" /> PNG
+          </button>
         </div>
       </div>
-      {screen === "viewer" ? (
-        <>
-          <FileUploadPanel />
-          <FilterPanel />
-        </>
-      ) : null}
+      <FilterPanel />
     </header>
   );
 }

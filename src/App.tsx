@@ -1,29 +1,47 @@
-import { DetailPanel } from "./components/DetailPanel";
-import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
-import { GraphCanvas } from "./components/GraphCanvas";
+import { useEffect } from "react";
+import { useGtStore } from "./gt/gtStore";
+import { TopBar } from "./gt/components/TopBar";
+import { TabBar } from "./gt/components/TabBar";
+import { NodeVerificationTab } from "./gt/components/NodeVerificationTab";
+import { FactsTab } from "./gt/components/FactsTab";
+import { DiagramTab } from "./gt/components/DiagramTab";
 import { HelpPage } from "./components/HelpPage";
-import { SummaryBar } from "./components/SummaryBar";
-import { Toolbar } from "./components/Toolbar";
-import { useGraphStore } from "./store/graphStore";
 
 export default function App() {
-  const screen = useGraphStore((state) => state.screen);
+  const activeTab = useGtStore((state) => state.activeTab);
+  const loadError = useGtStore((state) => state.loadError);
+  const helpOpen = useGtStore((state) => state.helpOpen);
+
+  // Left/Right arrows step through nodes (when not typing in a field).
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const tag = (document.activeElement?.tagName || "").toUpperCase();
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const store = useGtStore.getState();
+      if (event.key === "ArrowLeft") {
+        store.navigateNode(-1);
+        event.preventDefault();
+      } else if (event.key === "ArrowRight") {
+        store.navigateNode(1);
+        event.preventDefault();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  const showTab = (tab: string) => !helpOpen && activeTab === tab;
 
   return (
-    <div className={`app-shell ${screen === "help" ? "app-shell-help" : ""}`}>
-      <Toolbar />
-      {screen === "viewer" ? (
-        <>
-          <SummaryBar />
-          <main className="workspace">
-            <GraphCanvas />
-            <DetailPanel />
-          </main>
-          <DiagnosticsPanel />
-        </>
-      ) : (
-        <HelpPage />
-      )}
+    <div id="app">
+      <TopBar />
+      <TabBar />
+      {loadError ? <div className="gt-load-error">{loadError}</div> : null}
+      {/* Tabs stay mounted (CSS-hidden) so the cytoscape instance survives. */}
+      <NodeVerificationTab active={showTab("nodes")} />
+      <FactsTab active={showTab("facts")} />
+      <DiagramTab active={showTab("diagram")} />
+      {helpOpen ? <HelpPage /> : null}
     </div>
   );
 }

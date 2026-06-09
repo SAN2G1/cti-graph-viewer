@@ -1,38 +1,18 @@
 import { useGraphStore } from "../store/graphStore";
-import type { GraphDiagnostic } from "../types/graph";
 import { expandCombineToLeafFacts, expandRequirementToLeafFacts } from "../utils/combineResolver";
 
 export function DetailPanel() {
   const parsed = useGraphStore((state) => state.parsed);
   const selectedIds = useGraphStore((state) => state.selectedIds);
-  const selectedDiagnostic = useGraphStore((state) => state.selectedDiagnostic);
 
-  if (!parsed) return <aside className="detail-panel"><h2>Selected Entity</h2><p>No workbook loaded.</p></aside>;
-  if (selectedDiagnostic) {
-    return (
-      <aside className="detail-panel">
-        <h2>Diagnostic</h2>
-        <EntityRows rows={[
-          ["Check", `[${selectedDiagnostic.checkNo}]`],
-          ["Severity", selectedDiagnostic.severity],
-          ["Type", selectedDiagnostic.type],
-          ["Related IDs", selectedDiagnostic.relatedIds.join(", ") || "-"],
-          ["Workbook rows", formatRowRefs(selectedDiagnostic.rowRefs)],
-          ["Suggested Fix", selectedDiagnostic.suggestedFix ?? "-"],
-          ["What to inspect", diagnosticTypeHelp(selectedDiagnostic)],
-        ]} />
-        <p className="diagnostic-message">{selectedDiagnostic.message}</p>
-      </aside>
-    );
-  }
+  if (!parsed) return <aside className="detail-panel"><h2>Selected Entity</h2><p>No data loaded.</p></aside>;
 
   const selectedId = selectedIds[0];
-  if (!selectedId) return <aside className="detail-panel"><h2>Selected Entity</h2><p>Select a graph object or diagnostic.</p></aside>;
+  if (!selectedId) return <aside className="detail-panel"><h2>Selected Entity</h2><p>Select a graph object.</p></aside>;
 
   const node = parsed.nodes.find((item) => item.id === selectedId);
   const fact = parsed.facts.find((item) => item.id === selectedId);
   const combine = parsed.combines.find((item) => item.id === selectedId);
-  const relatedDiagnostics = parsed.diagnostics.filter((diagnostic) => diagnostic.relatedIds.includes(selectedId));
   const combineMap = new Map(parsed.combines.map((item) => [item.id, item]));
 
   if (node) {
@@ -50,7 +30,6 @@ export function DetailPanel() {
           ["Parsers", node.parsers.join(", ") || "-"],
           ["Ref", node.ref ?? "-"],
         ]} />
-        <RelatedDiagnostics diagnostics={relatedDiagnostics} />
       </aside>
     );
   }
@@ -68,7 +47,6 @@ export function DetailPanel() {
           ["Description", fact.description],
           ["Ref", fact.ref ?? "-"],
         ]} />
-        <RelatedDiagnostics diagnostics={relatedDiagnostics} />
       </aside>
     );
   }
@@ -88,7 +66,6 @@ export function DetailPanel() {
           ["Nested", nested ? "yes" : "no"],
           ["Cycle", expanded.hasCycle ? expanded.path.join(" → ") : "no"],
         ]} />
-        <RelatedDiagnostics diagnostics={relatedDiagnostics} />
       </aside>
     );
   }
@@ -107,48 +84,4 @@ function EntityRows({ rows }: { rows: Array<[string, string]> }) {
       ))}
     </dl>
   );
-}
-
-function RelatedDiagnostics({ diagnostics }: { diagnostics: GraphDiagnostic[] }) {
-  return (
-    <div className="related-diagnostics">
-      <h3>Related Diagnostics</h3>
-      {diagnostics.length === 0 ? <p>None</p> : diagnostics.map((diagnostic) => (
-        <p key={diagnostic.id} className={`severity-${diagnostic.severity}`}>
-          <strong>[{diagnostic.checkNo}]</strong> {diagnostic.message}
-          <br />
-          <span className="diagnostic-meta">{formatRowRefs(diagnostic.rowRefs)}</span>
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function diagnosticTypeHelp(diagnostic: GraphDiagnostic): string {
-  switch (diagnostic.type) {
-    case "header_mismatch":
-      return "Check the uploaded sheet headers and their exact order.";
-    case "missing_reference":
-    case "wrong_reference_type":
-      return "Compare the referenced IDs with the source table and confirm the target type matches.";
-    case "producer_parser_mismatch":
-    case "requirement_consumer_mismatch":
-      return "Review both sides of the relationship and make sure producer/consumer links are symmetric.";
-    case "invalid_combine":
-    case "combine_cycle":
-    case "multi_requirement_without_combine":
-      return "Inspect the combine members and consumer chain to confirm the AND/OR structure is valid.";
-    case "unreachable_node":
-    case "unproducible_fact":
-      return "Trace the upstream requirements and verify there is at least one valid source path.";
-    default:
-      return "Inspect the referenced rows and compare them with the related IDs shown in the graph.";
-  }
-}
-
-function formatRowRefs(rowRefs: GraphDiagnostic["rowRefs"]): string {
-  if (!rowRefs || rowRefs.length === 0) return "Location unavailable";
-  return rowRefs
-    .map((rowRef) => `${rowRef.table.toUpperCase()} row ${rowRef.rowIndex + 1}${rowRef.column ? ` · ${rowRef.column}` : ""}`)
-    .join(" / ");
 }

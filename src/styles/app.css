@@ -1,9 +1,7 @@
 :root {
-  color: #172033;
-  background: #f4f6f8;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  color: var(--text-primary, #0a0a0a);
+  background: var(--bg-base, #fafafa);
+  font-family: 'Geist', 'Pretendard', 'Apple SD Gothic Neo', 'Segoe UI', sans-serif;
 }
 
 * {
@@ -24,9 +22,9 @@ select {
 button,
 select,
 .upload-button {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-mid);
   background: #ffffff;
-  color: #172033;
+  color: var(--text-primary);
   border-radius: 6px;
   min-height: 34px;
 }
@@ -54,7 +52,7 @@ select,
 
 .app-header {
   background: #ffffff;
-  border-bottom: 1px solid #d7dde5;
+  border-bottom: 1px solid var(--border-mid);
   padding: 12px 14px;
 }
 
@@ -109,7 +107,7 @@ h1 {
 .search-input {
   width: 240px;
   min-height: 34px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-mid);
   border-radius: 6px;
 }
 
@@ -126,8 +124,8 @@ h1 {
   align-items: center;
   min-height: 38px;
   padding: 8px 14px;
-  border-bottom: 1px solid #d7dde5;
-  background: #eef3f8;
+  border-bottom: 1px solid var(--border-mid);
+  background: var(--bg-elevated);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -144,8 +142,8 @@ h1 {
 }
 
 .detail-panel {
-  border-left: 1px solid #d7dde5;
-  background: #fbfcfe;
+  border-left: 1px solid var(--border-mid);
+  background: var(--bg-base);
   padding: 14px;
   overflow: auto;
 }
@@ -166,7 +164,7 @@ h1 {
 
 .entity-rows div {
   padding: 9px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-dim);
 }
 
 .entity-rows dt {
@@ -188,14 +186,14 @@ h1 {
 
 .related-diagnostics p,
 .diagnostic-message {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-dim);
   border-radius: 6px;
   padding: 8px;
   background: #ffffff;
 }
 
 .diagnostics-panel {
-  border-top: 1px solid #d7dde5;
+  border-top: 1px solid var(--border-mid);
   background: #ffffff;
   padding: 10px 14px;
   overflow: auto;
@@ -213,7 +211,7 @@ h1 {
 }
 
 .diagnostic-group {
-  border: 1px solid #d7dde5;
+  border: 1px solid var(--border-mid);
   border-radius: 8px;
   overflow: hidden;
   background: #f8fafc;
@@ -224,7 +222,7 @@ h1 {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
-  background: #eef3f8;
+  background: var(--bg-elevated);
   font-size: 13px;
 }
 
@@ -236,7 +234,7 @@ h1 {
   height: auto;
   min-height: 38px;
   border: 0;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-dim);
   border-radius: 0;
   text-align: left;
   font-size: 12px;
@@ -278,7 +276,7 @@ h1 {
   min-height: 0;
   overflow: auto;
   padding: 24px;
-  background: #f4f6f8;
+  background: var(--bg-base);
 }
 
 .help-hero {
@@ -293,7 +291,7 @@ h1 {
   margin: 0 0 8px;
   font-size: 12px;
   font-weight: 700;
-  color: #475569;
+  color: var(--text-tertiary);
   text-transform: uppercase;
 }
 
@@ -307,7 +305,7 @@ h1 {
   margin: 12px 0 0;
   max-width: 760px;
   line-height: 1.6;
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .help-nav {
@@ -315,33 +313,64 @@ h1 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 16px;
-  border: 1px solid #d7dde5;
+  border: 1px solid var(--border-mid);
   border-radius: 8px;
   background: #ffffff;
 }
 
 .help-nav a {
-  color: #0f172a;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 13px;
 }
 
-.help-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+.help-nav a:hover {
+  font-weight: 700;
 }
 
-.help-card {
-  padding: 18px;
-  border: 1px solid #d7dde5;
-  border-radius: 8px;
+.help-sections {
+  display: grid;
+  gap: 18px;
+  max-width: 880px;
+}
+
+.help-section {
+  padding: 16px 20px 18px;
+  border: 1px solid var(--border-mid);
+  border-radius: 10px;
   background: #ffffff;
 }
 
-.help-card h3 {
-  margin: 0 0 14px;
+.help-section-head {
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.help-section-head h3 {
+  margin: 0;
   font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.help-section-note {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.help-subhead {
+  margin: 16px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.help-section-head + .help-subhead {
+  margin-top: 0;
 }
 
 .help-list {
@@ -350,7 +379,7 @@ h1 {
 
 .help-list div {
   padding: 10px 0;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-dim);
 }
 
 .help-list div:first-child {
@@ -362,13 +391,13 @@ h1 {
   margin-bottom: 4px;
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .help-list dd {
   margin: 0;
   line-height: 1.55;
-  color: #475569;
+  color: var(--text-tertiary);
 }
 
 .diagnostic-meta {
@@ -388,7 +417,7 @@ h1 {
   right: 14px;
   width: 220px;
   padding: 12px;
-  border: 1px solid #d7dde5;
+  border: 1px solid var(--border-mid);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
@@ -411,7 +440,7 @@ h1 {
   gap: 8px;
   align-items: center;
   font-size: 12px;
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .legend-line,
@@ -421,13 +450,14 @@ h1 {
 
 .legend-line {
   height: 0;
-  border-top: 3px solid #64748b;
+  border-top: 3px solid #bfc3c9;
 }
 
-.legend-line.incoming { border-color: #1d4ed8; }
-.legend-line.outgoing { border-color: #d97706; }
-.legend-line.fact { border-color: #0f766e; }
-.legend-line.combine { border-color: #7c3aed; }
+.legend-line.incoming { border-color: #0058cc; }
+.legend-line.outgoing { border-color: #ea580c; }
+.legend-line.fact { border-color: #0d9488; }
+.legend-line.combine { border-color: #0058cc; }
+.legend-line.member { border-top-style: dashed; border-color: #b4b8bf; }
 
 .legend-swatch {
   width: 18px;
@@ -463,3 +493,11 @@ h1 {
 
 .legend-swatch.and { border-color: #dc2626; }
 .legend-swatch.or { border-color: #0284c7; }
+
+.toggle:has(input:disabled) { opacity: 0.45; }
+
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

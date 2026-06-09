@@ -1,41 +1,28 @@
 import { create } from "zustand";
 import type cytoscape from "cytoscape";
-import type { WorkBook } from "xlsx";
-import type { DiagnosticSeverity, GraphDiagnostic, ParsedWorkbook, ViewMode } from "../types/graph";
-import { parseUploadedWorkbooks, type UploadedTables } from "../utils/workbookParser";
-
-type AppScreen = "viewer" | "help";
+import type { ParsedWorkbook, ViewMode } from "../types/graph";
 
 interface GraphState {
-  uploadedTables: UploadedTables;
   parsed: ParsedWorkbook | null;
   selectedIds: string[];
-  selectedDiagnostic: GraphDiagnostic | null;
-  screen: AppScreen;
   viewMode: ViewMode;
   searchTerm: string;
-  tacticFilter: string;
-  severityFilter: DiagnosticSeverity | "all";
   showExternalFacts: boolean;
-  showExecutionRequiredFacts: boolean;
   showLegend: boolean;
   cy: cytoscape.Core | null;
   layoutVersion: number;
   flowLayoutVersion: number;
   flowLayoutMode: "default" | "mitre";
   fitVersion: number;
-  setWorkbook: (kind: keyof UploadedTables, workbook: WorkBook) => void;
+  resetVersion: number;
+  setParsed: (parsed: ParsedWorkbook | null) => void;
   setSelectedIds: (ids: string[]) => void;
-  setSelectedDiagnostic: (diagnostic: GraphDiagnostic | null) => void;
-  setScreen: (screen: AppScreen) => void;
   setViewMode: (viewMode: ViewMode) => void;
   setSearchTerm: (term: string) => void;
-  setTacticFilter: (tactic: string) => void;
-  setSeverityFilter: (severity: DiagnosticSeverity | "all") => void;
   setShowExternalFacts: (show: boolean) => void;
-  setShowExecutionRequiredFacts: (show: boolean) => void;
   setShowLegend: (show: boolean) => void;
   resetHighlight: () => void;
+  resetView: () => void;
   setCy: (cy: cytoscape.Core | null) => void;
   requestLayout: () => void;
   requestFlowLayout: () => void;
@@ -43,44 +30,32 @@ interface GraphState {
 }
 
 export const useGraphStore = create<GraphState>((set, get) => ({
-  uploadedTables: {},
   parsed: null,
   selectedIds: [],
-  selectedDiagnostic: null,
-  screen: "viewer",
   viewMode: "full",
   searchTerm: "",
-  tacticFilter: "",
-  severityFilter: "all",
   showExternalFacts: true,
-  showExecutionRequiredFacts: true,
   showLegend: true,
   cy: null,
   layoutVersion: 0,
   flowLayoutVersion: 0,
   flowLayoutMode: "default",
   fitVersion: 0,
-  setWorkbook: (kind, workbook) => {
-    const uploadedTables = { ...get().uploadedTables, [kind]: workbook };
-    const parsed = parseUploadedWorkbooks(uploadedTables);
-    set({ uploadedTables, parsed, selectedIds: [], selectedDiagnostic: null });
-  },
-  setSelectedIds: (selectedIds) => set({ selectedIds, selectedDiagnostic: null }),
-  setSelectedDiagnostic: (selectedDiagnostic) =>
-    set({
-      selectedDiagnostic,
-      selectedIds: selectedDiagnostic?.relatedIds ?? [],
-      viewMode: selectedDiagnostic ? "diagnostics" : get().viewMode,
-    }),
-  setScreen: (screen) => set({ screen }),
+  resetVersion: 0,
+  setParsed: (parsed) => set({ parsed, selectedIds: [] }),
+  setSelectedIds: (selectedIds) => set({ selectedIds }),
   setViewMode: (viewMode) => set({ viewMode }),
   setSearchTerm: (searchTerm) => set({ searchTerm }),
-  setTacticFilter: (tacticFilter) => set({ tacticFilter }),
-  setSeverityFilter: (severityFilter) => set({ severityFilter }),
   setShowExternalFacts: (showExternalFacts) => set({ showExternalFacts }),
-  setShowExecutionRequiredFacts: (showExecutionRequiredFacts) => set({ showExecutionRequiredFacts }),
   setShowLegend: (showLegend) => set({ showLegend }),
-  resetHighlight: () => set({ selectedIds: [], selectedDiagnostic: null, searchTerm: "" }),
+  resetHighlight: () => set({ selectedIds: [], searchTerm: "" }),
+  resetView: () =>
+    set((state) => ({
+      selectedIds: [],
+      searchTerm: "",
+      resetVersion: state.resetVersion + 1,
+      layoutVersion: state.layoutVersion + 1,
+    })),
   setCy: (cy) => set({ cy }),
   requestLayout: () => set({ layoutVersion: get().layoutVersion + 1 }),
   requestFlowLayout: () => set({ flowLayoutVersion: get().flowLayoutVersion + 1, flowLayoutMode: "default" }),

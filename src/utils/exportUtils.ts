@@ -1,6 +1,4 @@
 import type cytoscape from "cytoscape";
-import type { ParsedWorkbook } from "../types/graph";
-import { buildCytoscapeElements } from "./graphBuilder";
 
 type SaveFilePickerWindow = Window & typeof globalThis & {
   showSaveFilePicker?: (options?: {
@@ -16,19 +14,6 @@ type SaveFilePickerWindow = Window & typeof globalThis & {
     }>;
   }>;
 };
-
-export function exportJson(input: ParsedWorkbook): void {
-  const payload = {
-    nodes: input.nodes,
-    facts: input.facts,
-    combines: input.combines,
-    diagnostics: input.diagnostics,
-    graph: {
-      elements: buildCytoscapeElements(input, { viewMode: "full", severityFilter: "all", showExternalFacts: true, showExecutionRequiredFacts: true }),
-    },
-  };
-  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), "cti-dependency-graph.json");
-}
 
 export async function exportPng(cy: cytoscape.Core | null): Promise<void> {
   if (!cy) return;
