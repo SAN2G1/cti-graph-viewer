@@ -9,7 +9,6 @@ import { HelpPage } from "./components/HelpPage";
 
 export default function App() {
   const activeTab = useGtStore((state) => state.activeTab);
-  const loadError = useGtStore((state) => state.loadError);
   const helpOpen = useGtStore((state) => state.helpOpen);
 
   // Left/Right arrows step through nodes (when not typing in a field).
@@ -36,7 +35,6 @@ export default function App() {
     <div id="app">
       <TopBar />
       <TabBar />
-      {loadError ? <div className="gt-load-error">{loadError}</div> : null}
       {/* Tabs stay mounted (CSS-hidden) so the cytoscape instance survives. */}
       <NodeVerificationTab active={showTab("nodes")} />
       <FactsTab active={showTab("facts")} />

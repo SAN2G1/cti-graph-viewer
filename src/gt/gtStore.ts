@@ -17,7 +17,6 @@ interface GtState {
   selectedFactId: string | null;
   reportViewMode: ReportViewMode;
   pageImageMap: Record<number, string>;
-  loadError: string | null;
   helpOpen: boolean;
 
   loadData: (json: ViewerData) => void;
@@ -30,7 +29,6 @@ interface GtState {
   setFactNote: (factId: string, note: string) => void;
   setReportViewMode: (mode: ReportViewMode) => void;
   setPageImageMap: (map: Record<number, string>) => void;
-  setLoadError: (message: string | null) => void;
   importNotes: (report: NoteReport) => string;
 }
 
@@ -43,7 +41,6 @@ export const useGtStore = create<GtState>((set, get) => ({
   selectedFactId: null,
   reportViewMode: "text",
   pageImageMap: {},
-  loadError: null,
   helpOpen: false,
 
   loadData: (json) => {
@@ -69,7 +66,6 @@ export const useGtStore = create<GtState>((set, get) => ({
       factNotes: {},
       nodeIndex: 0,
       selectedFactId: null,
-      loadError: null,
     });
   },
 
@@ -107,7 +103,6 @@ export const useGtStore = create<GtState>((set, get) => ({
 
   setReportViewMode: (reportViewMode) => set({ reportViewMode }),
   setPageImageMap: (pageImageMap) => set({ pageImageMap }),
-  setLoadError: (loadError) => set({ loadError }),
 
   importNotes: (report) => {
     const { data, nodeNotes, factNotes } = get();

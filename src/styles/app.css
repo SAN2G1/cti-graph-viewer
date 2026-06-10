@@ -274,82 +274,86 @@ h1 {
 
 .help-page {
   min-height: 0;
-  overflow: auto;
-  padding: 24px;
+  overflow: hidden;
   background: var(--bg-base);
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
 }
 
-.help-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
-  gap: 18px;
-  align-items: start;
-  margin-bottom: 18px;
+.help-sidebar {
+  align-self: stretch;
+  overflow: auto;
+  padding: 24px 16px;
+  border-right: 1px solid var(--border-mid);
+  background: #ffffff;
 }
 
 .help-eyebrow {
-  margin: 0 0 8px;
-  font-size: 12px;
+  margin: 0 0 2px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
 
-.help-hero h2 {
-  margin: 0;
-  font-size: 28px;
-  line-height: 1.2;
+.help-sidebar-title {
+  margin: 0 0 14px;
+  padding: 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.help-intro {
-  margin: 12px 0 0;
-  max-width: 760px;
-  line-height: 1.6;
-  color: var(--text-secondary);
+.help-content {
+  min-width: 0;
+  overflow: auto;
+  padding: 28px 32px;
 }
 
 .help-nav {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--border-mid);
-  border-radius: 8px;
-  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.help-nav a {
-  color: var(--text-primary);
-  text-decoration: none;
+.help-nav-item {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
   font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.help-nav a:hover {
+.help-nav-item:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.help-nav-item.active {
+  background: var(--bg-base);
+  color: var(--text-primary);
   font-weight: 700;
 }
 
-.help-sections {
-  display: grid;
-  gap: 18px;
-  max-width: 880px;
-}
-
 .help-section {
-  padding: 16px 20px 18px;
-  border: 1px solid var(--border-mid);
-  border-radius: 10px;
-  background: #ffffff;
+  max-width: 760px;
 }
 
 .help-section-head {
-  padding-bottom: 12px;
-  margin-bottom: 8px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--border-dim);
 }
 
 .help-section-head h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
 }

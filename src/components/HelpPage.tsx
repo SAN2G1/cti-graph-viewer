@@ -1,123 +1,204 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-export function HelpPage() {
-  return (
-    <main className="help-page">
-      <section className="help-hero">
-        <div>
-          <p className="help-eyebrow">Guide</p>
-          <h2>CTI Graph Viewer — Guide</h2>
-          <p className="help-intro">
-            Load one data file to review the nodes, facts, and dependency graph in a single
-            place. Below is a glossary and a summary of what each tab does.
-          </p>
-        </div>
-        <nav className="help-nav" aria-label="Help sections">
-          <a href="#help-glossary">Glossary</a>
-          <a href="#help-topbar">Top bar</a>
-          <a href="#help-nodes">Nodes</a>
-          <a href="#help-facts">Facts</a>
-          <a href="#help-diagram">Diagram</a>
-          <a href="#help-shortcuts">Shortcuts</a>
-        </nav>
-      </section>
-
-      <div className="help-sections">
-        <Section id="help-glossary" title="Glossary">
-          <HelpList
-            items={[
-              ["Node", "A single technique used in the attack"],
-              ["Fact", "A premise or piece of information the attack relies on"],
-              ["Combine", "Several facts grouped with an AND / OR condition"],
-              ["Tactic", "An attack-objective stage that groups nodes"],
-            ]}
-          />
-        </Section>
-
-        <Section id="help-topbar" title="Top bar" note="Load data and export notes">
-          <HelpList
-            items={[
-              ["Load", "Loads viewer_data.json into every tab"],
-              ["Images", "Picks the report-page image folder"],
-              ["Import", "Loads and restores a saved notes file"],
-              ["JSON, CSV", "Saves node and fact notes to a file"],
-            ]}
-          />
-        </Section>
-
-        <Section id="help-nodes" title="Nodes tab" note="Browse node data and take notes">
-          <HelpList
-            items={[
-              ["Prev, Next, Node List", "Move between nodes with buttons, arrow keys, or search"],
-              ["Requirements", "Tree of required facts and AND / OR conditions"],
-              ["Parsers, Relationships", "Parser facts and relationship statements"],
-              ["Dependency", "Mini graph of the node and its directly connected facts, gates, and nodes"],
-              ["Report Pages", "View the source report pages as text or image"],
-              ["Note", "Free-form note per node"],
-            ]}
-          />
-        </Section>
-
-        <Section id="help-facts" title="Facts tab" note="Browse fact data and take notes">
-          <HelpList
-            items={[
-              ["Search", "Find facts by name or description"],
-              ["is_external", "Read-only external flag"],
-              ["Note", "Free-form note per fact"],
-              ["Report Pages", "View the related report pages"],
-            ]}
-          />
-        </Section>
-
-        <Section id="help-diagram" title="Diagram tab" note="Switch with the Graph / Flow toggle">
-          <h4 className="help-subhead">Graph</h4>
-          <HelpList
-            items={[
-              ["Full Dependency, Attack Flow", "Switch between the full structure and the attack flow"],
-              ["Search", "Find elements by id or name"],
-              ["External facts", "Attack Flow only — show or hide external input nodes"],
-              ["Auto Layout, Fit", "Re-arrange the graph and fit it to the screen"],
-              ["Select", "Click a node to highlight neighbors and show its details"],
-              ["PNG", "Save the graph as a PNG image"],
-            ]}
-          />
-          <h4 className="help-subhead">Flow</h4>
-          <HelpList
-            items={[
-              ["Mermaid", "Data-flow diagram, color-coded by fact / condition / technique"],
-              ["Zoom, Fit", "Zoom in or out and fit to the width"],
-              ["SVG, Copy", "Save as SVG or copy the source code"],
-            ]}
-          />
-        </Section>
-
-        <Section id="help-shortcuts" title="Shortcuts">
-          <HelpList items={[["Arrow keys", "Move to the previous / next node"]]} />
-        </Section>
-      </div>
-    </main>
-  );
-}
-
-function Section({
-  id,
-  title,
-  note,
-  children,
-}: {
+type SectionDef = {
   id: string;
+  label: string;
   title: string;
   note?: string;
-  children: ReactNode;
-}) {
+  content: ReactNode;
+};
+
+const SECTIONS: SectionDef[] = [
+  {
+    id: "concepts",
+    label: "Concepts",
+    title: "Concepts",
+    note: "Core terms, based on the MITRE ATT&CK framework",
+    content: (
+      <HelpList
+        items={[
+          [
+            "Node",
+            "A single step of the attack — one MITRE ATT&CK technique applied at a specific point. Each node carries its ATT&CK technique ID (e.g. T1059), the technique name, and the tactic it serves, along with the facts it requires and produces.",
+          ],
+          [
+            "Fact",
+            "A premise the attack depends on: an observation, artifact, or condition that must hold for a technique to work. Facts are produced by some nodes and consumed by others, which is what links the techniques into a dependency chain.",
+          ],
+          [
+            "Combine",
+            "A logical grouping of several facts with an AND / OR operator. It expresses a compound precondition — for example, two facts that must both be true (AND), or either one (OR) — that a node needs before it can run.",
+          ],
+          [
+            "Tactic",
+            "The adversary's tactical goal in MITRE ATT&CK — the \"why\" behind a technique (e.g. Initial Access, Execution, Persistence). Nodes are grouped by the tactic they advance, giving the high-level stages of the attack.",
+          ],
+        ]}
+      />
+    ),
+  },
+  {
+    id: "data",
+    label: "Data",
+    title: "Data & files",
+    note: "What you load in, and what you get out",
+    content: (
+      <>
+        <h4 className="help-subhead">Load (Input)</h4>
+        <HelpList
+          items={[
+            [
+              "node.xlsx, fact.xlsx, combine.xlsx",
+              "The three answer-sheet tables (required). Press Load in the top bar, pick all three, and the viewer builds its node / fact / combine data from them in the browser — no separate script or JSON step.",
+            ],
+            [
+              "Report PDF",
+              "The original report (required). Page text is extracted for the Text view, and referenced pages are rendered to images for the Image view automatically.",
+            ],
+            [
+              "Page offset",
+              "Optional. Set it in the Load dialog when the printed page numbers differ from the physical PDF pages (printed = physical − offset), e.g. because of a cover page.",
+            ],
+            [
+              "Notes file",
+              "Optional. Use Import to load a previously exported notes JSON and restore your annotations onto the matching nodes and facts.",
+            ],
+          ]}
+        />
+        <h4 className="help-subhead">Save (Output)</h4>
+        <HelpList
+          items={[
+            [
+              "Notes JSON",
+              "Saves all node and fact notes to a JSON file that can be re-imported later to continue where you left off.",
+            ],
+            [
+              "Notes CSV",
+              "Saves node notes as a spreadsheet-friendly CSV for review or reporting outside the viewer.",
+            ],
+          ]}
+        />
+      </>
+    ),
+  },
+  {
+    id: "nodes",
+    label: "Nodes",
+    title: "Nodes tab",
+    note: "Everything known about one technique",
+    content: (
+      <HelpList
+        items={[
+          [
+            "Identity",
+            "The technique's ATT&CK ID and name, the tactic it serves, and a short summary of the behavior.",
+          ],
+          [
+            "Requirements",
+            "The facts the technique needs before it can run, grouped by the AND / OR conditions that combine them.",
+          ],
+          [
+            "Parsers & Relationships",
+            "Parser facts linked to the technique (inferred ones are flagged) and statements of how it relates to other facts and nodes.",
+          ],
+          [
+            "Dependency",
+            "A focused mini-graph of just this node and the facts, conditions, and nodes directly connected to it.",
+          ],
+          ["Report Pages", "The source report pages the technique is based on, as text or page image."],
+          ["Note", "Your own annotation for the node, included when you export notes."],
+        ]}
+      />
+    ),
+  },
+  {
+    id: "facts",
+    label: "Facts",
+    title: "Facts tab",
+    note: "What a fact is and where it comes from",
+    content: (
+      <HelpList
+        items={[
+          [
+            "Producers & Consumers",
+            "Which nodes generate the fact and which nodes rely on it — how the fact links techniques together.",
+          ],
+          [
+            "is_external",
+            "Whether the fact is an external input the attack assumes, or something produced during the attack.",
+          ],
+          ["Inferred", "Facts not stated explicitly in the report but reasoned from it are flagged as inferred."],
+          ["Report Pages", "The source report pages where the fact appears, as text or page image."],
+          ["Note", "Your own annotation for the fact, included when you export notes."],
+        ]}
+      />
+    ),
+  },
+  {
+    id: "diagram",
+    label: "Diagram",
+    title: "Diagram tab",
+    note: "A visual map of the whole attack",
+    content: (
+      <>
+        <h4 className="help-subhead">Graph</h4>
+        <HelpList
+          items={[
+            [
+              "Full Dependency",
+              "The complete graph of every node, fact, and condition, and how they all connect.",
+            ],
+            [
+              "Attack Flow",
+              "The same elements arranged as the ordered flow of the attack, with the option to hide external input facts.",
+            ],
+            ["Colors", "Nodes, facts, and combines are color-coded; the legend explains each. Selecting an element shows its full data in the side panel."],
+          ]}
+        />
+        <h4 className="help-subhead">Flow</h4>
+        <HelpList
+          items={[
+            ["Flow diagram", "A top-down data-flow diagram of the attack, color-coded by fact, combine, and technique."],
+            ["Export", "The Graph saves as PNG; the Flow saves as SVG or Mermaid source."],
+          ]}
+        />
+      </>
+    ),
+  },
+];
+
+export function HelpPage() {
+  const [activeId, setActiveId] = useState(SECTIONS[0].id);
+  const active = SECTIONS.find((s) => s.id === activeId) ?? SECTIONS[0];
+
   return (
-    <section id={id} className="help-section">
-      <div className="help-section-head">
-        <h3>{title}</h3>
-        {note ? <p className="help-section-note">{note}</p> : null}
+    <main className="help-page">
+      <aside className="help-sidebar" aria-label="Help sections">
+        <p className="help-sidebar-title">Guide</p>
+        <nav className="help-nav">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={`help-nav-item${s.id === active.id ? " active" : ""}`}
+              onClick={() => setActiveId(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="help-content">
+        <section className="help-section">
+          <div className="help-section-head">
+            <h3>{active.title}</h3>
+            {active.note ? <p className="help-section-note">{active.note}</p> : null}
+          </div>
+          {active.content}
+        </section>
       </div>
-      {children}
-    </section>
+    </main>
   );
 }
 
