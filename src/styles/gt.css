@@ -1560,17 +1560,6 @@ kbd {
   font-size: 14px;
 }
 
-.gt-load-error {
-  margin: var(--sp-2) var(--sp-6) 0;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--verdict-fail-bg);
-  color: var(--verdict-fail);
-  border: 1px solid #7f1d1d;
-  border-radius: var(--r-sm);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
 /* Diagram tab: embedded cytoscape graph viewer + mermaid, vertically scrollable */
 .diagram-graph-embed {
   flex: 1;
@@ -1749,3 +1738,140 @@ kbd {
 .diagram-view.is-hidden { display: none; }
 
 .btn-emoji { font-size: 13px; line-height: 1; }
+
+/* ============================================================
+   LOAD DIALOG — Excel + PDF → viewer data
+   ============================================================ */
+.load-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.32);
+}
+
+.load-dialog {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  padding: 22px;
+}
+
+.load-dialog-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.load-dialog-head p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.load-dialog-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.load-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-md);
+  background: var(--bg-base);
+  cursor: pointer;
+  transition: var(--t-fast);
+}
+.load-field:hover { border-color: var(--border-bright); }
+.load-field.filled { border-color: var(--accent-amber-border); background: var(--accent-amber-bg); }
+
+.load-field-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.load-field-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.load-field-hint {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.load-field-action {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-amber);
+}
+
+.load-dialog-offset {
+  display: grid;
+  grid-template-columns: auto 88px;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+.load-dialog-offset label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.load-optional {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-overlay);
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.load-dialog-offset input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-sm);
+  background: #ffffff;
+}
+.load-dialog-offset .load-field-hint {
+  grid-column: 1 / -1;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+.load-dialog-error {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: var(--r-sm);
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12.5px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.load-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.load-dialog-status { font-size: 12.5px; color: var(--text-tertiary); }
+.load-dialog-buttons { display: flex; gap: 8px; }
+.btn-nav.primary {
+  border-color: var(--accent-amber);
+  background: var(--accent-amber);
+  color: #ffffff;
+}
+.btn-nav.primary:hover:not(:disabled) {
+  background: var(--accent-amber-2);
+  border-color: var(--accent-amber-2);
+  color: #ffffff;
+}

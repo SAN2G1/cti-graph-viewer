@@ -30,7 +30,7 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
   if (!data) {
     return (
       <div className={`tab-pane${active ? " active" : ""}`} id="tab-nodes">
-        <div className="gt-empty">상단 <strong>Load</strong> 버튼으로 viewer_data.json 을 불러오세요.</div>
+        <div className="gt-empty">상단 <strong>Load</strong> 버튼으로 정답지 Excel 3개(node·fact·combine)와 보고서 PDF를 올려 데이터를 생성하세요.</div>
       </div>
     );
   }
