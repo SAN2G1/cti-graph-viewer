@@ -1,6 +1,27 @@
-# Interactive CTI Dependency Hypergraph Viewer
+# Fact-Based Attack Dependency Graph Viewer
 
-Browser-based React + TypeScript tool for loading CTI answer sheets from `node.xlsx`, `fact.xlsx`, and `combine.xlsx`, rendering the dependency hypergraph, and running mechanical validation over Node/Fact/Combine tables.
+A research prototype for inspecting CTI-derived attack dependency graphs built from `node.xlsx`, `fact.xlsx`, `combine.xlsx`, and the source report PDF. The system visualizes technique nodes, fact preconditions, AND/OR combinations, and mechanical consistency checks over the uploaded tables.
+
+![Fact-based attack dependency graph example](research/etc/cti-dependency-graph.png)
+
+## Dataset
+
+The `data/` directory contains the English answer-sheet dataset used with this viewer. It is organized by report:
+
+```text
+data/
+  ttps-01/
+    node.xlsx
+    fact.xlsx
+    combine.xlsx
+...
+  ttps-11/
+    node.xlsx
+    fact.xlsx
+    combine.xlsx
+```
+
+Each report folder provides the three tables needed to build a fact-based attack dependency graph. Original report links are listed in [Report Sources](data/reports.md).
 
 ## Install
 
@@ -14,11 +35,12 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal, then upload either:
+Open the Vite URL shown in the terminal, then upload:
 
-- Separate `node.xlsx`, `fact.xlsx`, `combine.xlsx` files
-- One combined workbook containing `Node Table`, `Fact Table`, and `Combine Table` sheets
-- Optional GT workbook for technique comparison
+- `node.xlsx`
+- `fact.xlsx`
+- `combine.xlsx`
+- The source report PDF
 
 ## Test
 
@@ -37,7 +59,7 @@ node_id, tactic, technique_id, technique_name, behavior_summary, requirements, r
 Fact Table header order must be:
 
 ```text
-fact_id, name, producers, consumers, is_external, level, description, ref
+fact_id, name, producers, consumers, is_external, level, description
 ```
 
 Combine Table header order must be:
@@ -46,35 +68,29 @@ Combine Table header order must be:
 combine_id, operator, members, consumer, label
 ```
 
-The parser tolerates whitespace, bracketed lists, comma/semicolon/slash-separated IDs, and lower-case IDs. Strict validation still checks the original header order and allowed values.
+The parser trims cell values and reads columns by name. Validation reports missing or unexpected columns, header order differences, invalid IDs, and unsupported enum values.
 
 ## Validation
 
-The diagnostics engine implements checks `[0]` through `[7]`:
+The load flow runs mechanical checks over the uploaded tables before committing data to the viewer:
 
-- `[0]` Exact table headers
-- `[1]` ID formats, allowed tactic/operator/is_external/level values, duplicate IDs
-- `[1b]` Relationship format and allowed verbs
-- `[2]` Missing references and wrong reference types
-- `[3]` Fact producers and Node parsers bidirectional consistency
-- `[3b]` Node leaf requirements and Fact consumers bidirectional consistency
-- `[4]` Combine member count, consumer count, cycles, and multi-requirement nodes
-- `[5]` External fact producer consistency
-- `[6]` Reachability simulation from external facts
-- `[7]` Optional GT technique ID/name comparison
+- Workbook schema: required headers, extra headers, and canonical header order
+- Row values: `is_external`, tactic, operator, level, and ID formats
+- References: missing node/fact/combine references and wrong reference types
+- Consistency: parser-producer and requirement-consumer mismatches
+- Combine logic: member count, missing members, invalid consumers, and cycles
+- Reachability: whether nodes can be reached from external facts
 
 ## View Modes
 
-- Full Dependency View: all Node, Fact, Combine entities and dependency edges
-- Attack Flow View: node-centric flow with indirect fact dependencies collapsed
-- Focus View: selected entity plus undirected 2-hop neighborhood
-- Diagnostics View: entities related to diagnostics highlighted, unrelated entities dimmed
+- Nodes: inspect each technique node, requirements, parsers, related report pages, and notes
+- Facts: inspect fact metadata, producers, consumers, linked pages, and notes
+- Diagram: inspect the dependency graph and generated diagram view
 
 ## Workflow
 
-1. Upload the three workbooks or a combined workbook.
-2. Inspect the Summary Bar for counts and failure totals.
-3. Use Full Dependency View to inspect producer, consumer, parser, and combine structure.
-4. Click a node, fact, combine, or diagnostic to focus related graph objects.
-5. Switch to Attack Flow View for node-to-node dependency flow.
-6. Export JSON or PNG from the toolbar.
+1. Upload the three Excel files and the report PDF from the Load dialog.
+2. Review validation errors and warnings before loading the generated viewer data.
+3. Use the Nodes and Facts tabs to inspect evidence and add notes.
+4. Use the Diagram tab to inspect dependency structure.
+5. Export notes as JSON or CSV from the top bar.
