@@ -1,8 +1,4 @@
-// Browser port of prepare_data.py — turns the three answer-sheet Excel files
-// (node / fact / combine) plus the report PDF into the viewer_data the app
-// consumes (nodes / facts / combines), and renders referenced PDF pages to
-// images. Ground-truth validation is intentionally omitted: the viewer never
-// reads it.
+// Builds viewer data from node/fact/combine Excel files and the report PDF.
 
 import * as XLSX from "xlsx";
 import * as pdfjsLib from "pdfjs-dist";
@@ -16,10 +12,23 @@ import type {
   ViewerParser,
   ViewerReqItem,
 } from "./types";
+import {
+  parseBooleanCell,
+  validateWorkbookDataRows,
+  validateWorkbookHeaders,
+  validateWorkbookRows,
+  type ValidationIssue,
+  type WorkbookSheetKind,
+} from "./validation";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorkerUrl;
 
 type Row = Record<string, string>;
+
+interface ParsedSheet {
+  rows: Row[];
+  workbookIssues: ValidationIssue[];
+}
 
 export interface PrepareInput {
   nodeFile: File;
@@ -33,11 +42,8 @@ export interface PrepareInput {
 export interface PrepareResult {
   data: ViewerData;
   images: Record<number, string>;
+  workbookIssues: ValidationIssue[];
 }
-
-// ---------------------------------------------------------------------------
-// Small helpers (mirrors of the Python ones)
-// ---------------------------------------------------------------------------
 
 function splitIds(raw: string | undefined): string[] {
   if (!raw || !raw.trim()) return [];
@@ -49,7 +55,7 @@ function splitIds(raw: string | undefined): string[] {
 }
 
 function parseBool(value: string | undefined): boolean {
-  return ["true", "1", "yes"].includes(String(value ?? "").trim().toLowerCase());
+  return parseBooleanCell(value) ?? false;
 }
 
 function trailingInt(token: string): number | null {
@@ -62,18 +68,15 @@ function refTokens(raw: string | undefined): string[] {
   return raw.trim().split(/[,\s;·]+/).filter(Boolean);
 }
 
-// ---------------------------------------------------------------------------
-// Excel parsing — first sheet → list of trimmed string-valued row dicts
-// ---------------------------------------------------------------------------
-
-async function parseSheet(file: File): Promise<Row[]> {
+async function parseSheet(file: File, kind: WorkbookSheetKind): Promise<ParsedSheet> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(new Uint8Array(buf), { type: "array" });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  if (!ws) return [];
+  if (!ws) return { rows: [], workbookIssues: validateWorkbookHeaders(kind, file.name, []) };
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "" });
-  if (!aoa.length) return [];
-  const headers = (aoa[0] as unknown[]).map((h) => String(h ?? "").trim());
+  if (!aoa.length) return { rows: [], workbookIssues: validateWorkbookHeaders(kind, file.name, []) };
+  const headers = (aoa[0] as unknown[]).map((h) => String(h ?? "").trim().toLowerCase());
+  const workbookIssues = validateWorkbookHeaders(kind, file.name, headers);
   const rows: Row[] = [];
   for (const raw of aoa.slice(1)) {
     const cells = raw as unknown[];
@@ -84,12 +87,8 @@ async function parseSheet(file: File): Promise<Row[]> {
     });
     rows.push(dict);
   }
-  return rows;
+  return { rows, workbookIssues: [...workbookIssues, ...validateWorkbookRows(kind, file.name, rows)] };
 }
-
-// ---------------------------------------------------------------------------
-// PDF — open once, extract per-page text and render referenced pages
-// ---------------------------------------------------------------------------
 
 type PdfDoc = Awaited<ReturnType<typeof pdfjsLib.getDocument>["promise"]>;
 
@@ -148,10 +147,6 @@ async function renderPageImages(
   }
   return images;
 }
-
-// ---------------------------------------------------------------------------
-// Core build — fact / combine maps, requirement trees, report-page wiring
-// ---------------------------------------------------------------------------
 
 interface FactInternal extends ViewerFact {
   is_external: boolean;
@@ -216,7 +211,6 @@ function buildViewerData(
   combineRows: Row[],
   reportPages: Map<number, string>,
 ): { data: ViewerData; referencedPages: Set<number> } {
-  // Facts
   const factsMap = new Map<string, FactInternal>();
   const factsByName = new Map<string, FactInternal>();
   for (const row of factRows) {
@@ -239,7 +233,6 @@ function buildViewerData(
     if (name) factsByName.set(name, fact);
   }
 
-  // Combines
   const combineMap = new Map<string, ViewerCombine & { member_ids: string[] }>();
   for (const row of combineRows) {
     const cid = (row.combine_id || "").trim();
@@ -255,14 +248,12 @@ function buildViewerData(
     });
   }
 
-  // Node ref column (printed page tokens)
   const nodeRefRaw = new Map<string, string>();
   for (const row of nodeRows) {
     const nid = (row.node_id || "").trim();
     if (nid) nodeRefRaw.set(nid, (row.ref || "").trim());
   }
 
-  // Fact → report pages via the refs of producing / consuming nodes
   for (const fact of factsMap.values()) {
     const numbers = new Set<number>();
     for (const nid of new Set([...(fact.producers || []), ...(fact.consumers || [])])) {
@@ -274,7 +265,6 @@ function buildViewerData(
     fact.report_pages = pagesFor(numbers, reportPages);
   }
 
-  // Nodes
   const nodes: ViewerNode[] = [];
   for (const row of nodeRows) {
     const nid = (row.node_id || "").trim();
@@ -307,7 +297,6 @@ function buildViewerData(
     });
   }
 
-  // Facts output (sorted by id)
   const facts: Record<string, ViewerFact> = {};
   for (const fid of [...factsMap.keys()].sort()) {
     const f = factsMap.get(fid)!;
@@ -324,7 +313,6 @@ function buildViewerData(
     };
   }
 
-  // Combines output (drops the internal member_ids helper field)
   const combines: ViewerCombine[] = [...combineMap.values()].map((c) => ({
     combine_id: c.combine_id,
     operator: c.operator,
@@ -333,7 +321,6 @@ function buildViewerData(
     members: c.members,
   }));
 
-  // Pages that any node or fact references — these get rendered to images
   const referencedPages = new Set<number>();
   for (const node of nodes)
     for (const p of node.report_pages || []) referencedPages.add(Number(p.page_number));
@@ -343,30 +330,36 @@ function buildViewerData(
   return { data: { nodes, facts, combines }, referencedPages };
 }
 
-// ---------------------------------------------------------------------------
-// Orchestrator
-// ---------------------------------------------------------------------------
-
 export async function prepareViewerData(input: PrepareInput): Promise<PrepareResult> {
   const { nodeFile, factFile, combineFile, pdfFile, pageOffset, onProgress } = input;
   const progress = onProgress ?? (() => {});
 
   progress("Reading Excel files…");
-  const [nodeRows, factRows, combineRows] = await Promise.all([
-    parseSheet(nodeFile),
-    parseSheet(factFile),
-    parseSheet(combineFile),
+  const [nodeSheet, factSheet, combineSheet] = await Promise.all([
+    parseSheet(nodeFile, "node"),
+    parseSheet(factFile, "fact"),
+    parseSheet(combineFile, "combine"),
   ]);
+  const workbookIssues = [
+    ...nodeSheet.workbookIssues,
+    ...factSheet.workbookIssues,
+    ...combineSheet.workbookIssues,
+    ...validateWorkbookDataRows({
+      nodeRows: nodeSheet.rows,
+      factRows: factSheet.rows,
+      combineRows: combineSheet.rows,
+    }),
+  ];
 
   progress("Extracting PDF text…");
   const pdf = await openPdf(pdfFile);
   const reportPages = await extractPdfText(pdf, pageOffset);
 
   progress("Building viewer data…");
-  const { data, referencedPages } = buildViewerData(nodeRows, factRows, combineRows, reportPages);
+  const { data, referencedPages } = buildViewerData(nodeSheet.rows, factSheet.rows, combineSheet.rows, reportPages);
 
   progress(`Rendering page images… (${referencedPages.size})`);
   const images = await renderPageImages(pdf, [...referencedPages], pageOffset);
 
-  return { data, images };
+  return { data, images, workbookIssues };
 }

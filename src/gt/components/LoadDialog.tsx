@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useGtStore } from "../gtStore";
 import { prepareViewerData } from "../prepareData";
+import type { ViewerData } from "../types";
+import { summarizeValidationIssues, validateViewerData, type ValidationResult } from "../validation";
 
 type Slot = "node" | "fact" | "combine" | "pdf";
 
@@ -20,15 +22,33 @@ export function LoadDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [validationResult, setLocalValidationResult] = useState<ValidationResult | null>(null);
+  const [pendingLoad, setPendingLoad] = useState<{
+    data: ViewerData;
+    images: Record<number, string>;
+    validationResult: ValidationResult;
+  } | null>(null);
 
   const ready = FIELDS.every((f) => files[f.slot]);
+
+  const commitLoad = (
+    data: ViewerData,
+    images: Record<number, string>,
+    result: ValidationResult,
+  ) => {
+    loadData(data, result);
+    setPageImageMap(images);
+    onClose();
+  };
 
   const generate = async () => {
     if (!ready || busy) return;
     setBusy(true);
     setError("");
+    setLocalValidationResult(null);
+    setPendingLoad(null);
     try {
-      const { data, images } = await prepareViewerData({
+      const { data, images, workbookIssues } = await prepareViewerData({
         nodeFile: files.node!,
         factFile: files.fact!,
         combineFile: files.combine!,
@@ -36,9 +56,19 @@ export function LoadDialog({ onClose }: { onClose: () => void }) {
         pageOffset,
         onProgress: setStatus,
       });
-      loadData(data);
-      setPageImageMap(images);
-      onClose();
+      const dataResult = validateViewerData(data);
+      const issues = [...workbookIssues, ...dataResult.issues];
+      const result: ValidationResult = {
+        issues,
+        summary: summarizeValidationIssues(issues),
+      };
+      setLocalValidationResult(result);
+      if (result.summary.errors > 0) {
+        setPendingLoad({ data, images, validationResult: result });
+        setStatus("");
+        return;
+      }
+      commitLoad(data, images, result);
     } catch (err) {
       setError((err as Error)?.message || String(err));
       setStatus("");
@@ -52,7 +82,7 @@ export function LoadDialog({ onClose }: { onClose: () => void }) {
       <div className="load-dialog" onMouseDown={(e) => e.stopPropagation()}>
         <div className="load-dialog-head">
           <h3>Load data</h3>
-          <p>Upload the three answer-sheet Excel files and the report PDF — the viewer builds its data automatically.</p>
+          <p>Upload node/fact/combine Excel files and the report PDF.</p>
         </div>
 
         <div className="load-dialog-fields">
@@ -62,7 +92,7 @@ export function LoadDialog({ onClose }: { onClose: () => void }) {
                 <span className="load-field-label">{f.label}</span>
                 <span className="load-field-hint">{files[f.slot]?.name || f.hint}</span>
               </div>
-              <span className="load-field-action">{files[f.slot] ? "변경" : "선택"}</span>
+              <span className="load-field-action">{files[f.slot] ? "Change" : "Select"}</span>
               <input
                 type="file"
                 accept={f.accept}
@@ -88,12 +118,12 @@ export function LoadDialog({ onClose }: { onClose: () => void }) {
             onChange={(e) => setPageOffset(parseInt(e.target.value, 10) || 0)}
           />
           <span className="load-field-hint">
-            Leave at 0 in most cases. Only change it if the page numbers printed in the report don't match the
-            actual PDF pages — e.g. if the PDF has a cover page so report page 1 is the 3rd PDF page, set this to 2.
+            Use 0 unless printed report pages differ from physical PDF pages.
           </span>
         </div>
 
         {error ? <div className="load-dialog-error">{error}</div> : null}
+        {validationResult ? <ValidationSummary result={validationResult} /> : null}
 
         <div className="load-dialog-foot">
           <span className="load-dialog-status">{busy ? status : ""}</span>
@@ -101,12 +131,53 @@ export function LoadDialog({ onClose }: { onClose: () => void }) {
             <button type="button" className="btn-nav" onClick={onClose} disabled={busy}>
               Cancel
             </button>
-            <button type="button" className="btn-nav primary" onClick={generate} disabled={!ready || busy}>
-              {busy ? "Processing…" : "Generate"}
-            </button>
+            {pendingLoad ? (
+              <button
+                type="button"
+                className="btn-nav primary"
+                onClick={() => commitLoad(pendingLoad.data, pendingLoad.images, pendingLoad.validationResult)}
+              >
+                Load anyway
+              </button>
+            ) : (
+              <button type="button" className="btn-nav primary" onClick={generate} disabled={!ready || busy}>
+                {busy ? "Processing…" : "Generate"}
+              </button>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ValidationSummary({ result }: { result: ValidationResult }) {
+  const { summary, issues } = result;
+  const topIssues = issues.slice(0, 6);
+
+  return (
+    <div className={`load-validation${summary.errors > 0 ? " has-errors" : ""}`}>
+      <div className="load-validation-head">
+        <span>Validation</span>
+        <span>
+          {summary.errors} errors · {summary.warnings} warnings
+        </span>
+      </div>
+      {topIssues.length > 0 ? (
+        <ul className="load-validation-list">
+          {topIssues.map((issue) => (
+            <li key={issue.id} data-severity={issue.severity}>
+              <strong>{issue.code}</strong>
+              <span>{issue.message}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="load-validation-empty">No validation issues found.</p>
+      )}
+      {issues.length > topIssues.length ? (
+        <div className="load-validation-more">+{issues.length - topIssues.length} more issues</div>
+      ) : null}
     </div>
   );
 }

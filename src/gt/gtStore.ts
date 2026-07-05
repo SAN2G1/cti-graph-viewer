@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useGraphStore } from "../store/graphStore";
 import { viewerDataToParsedWorkbook } from "./viewerDataAdapter";
 import type { GtTab, NoteReport, ReportViewMode, ViewerData } from "./types";
+import type { ValidationResult } from "./validation";
 
 function nodeNum(id: unknown): number {
   const match = String(id ?? "").match(/\d+/);
@@ -17,9 +18,10 @@ interface GtState {
   selectedFactId: string | null;
   reportViewMode: ReportViewMode;
   pageImageMap: Record<number, string>;
+  validationResult: ValidationResult | null;
   helpOpen: boolean;
 
-  loadData: (json: ViewerData) => void;
+  loadData: (json: ViewerData, validationResult?: ValidationResult | null) => void;
   setActiveTab: (tab: GtTab) => void;
   setHelpOpen: (open: boolean) => void;
   navigateNode: (delta: number) => void;
@@ -41,9 +43,10 @@ export const useGtStore = create<GtState>((set, get) => ({
   selectedFactId: null,
   reportViewMode: "text",
   pageImageMap: {},
+  validationResult: null,
   helpOpen: false,
 
-  loadData: (json) => {
+  loadData: (json, validationResult = null) => {
     const data: ViewerData = { ...json };
 
     if (Array.isArray(data.nodes)) {
@@ -66,6 +69,7 @@ export const useGtStore = create<GtState>((set, get) => ({
       factNotes: {},
       nodeIndex: 0,
       selectedFactId: null,
+      validationResult,
     });
   },
 
@@ -106,9 +110,9 @@ export const useGtStore = create<GtState>((set, get) => ({
 
   importNotes: (report) => {
     const { data, nodeNotes, factNotes } = get();
-    if (!data) return "먼저 데이터를 로드한 뒤 메모를 가져오세요.";
+    if (!data) return "Load data first, then import notes.";
     if (!Array.isArray(report.node_notes) && !Array.isArray(report.fact_notes)) {
-      return "인식할 수 없는 형식입니다. node_notes / fact_notes 가 필요합니다.";
+      return "Unrecognized format. node_notes / fact_notes are required.";
     }
 
     const nextNodeNotes = { ...nodeNotes };
@@ -130,7 +134,7 @@ export const useGtStore = create<GtState>((set, get) => ({
     });
 
     set({ nodeNotes: nextNodeNotes, factNotes: nextFactNotes });
-    return `가져오기 완료 — 노드 메모 ${nodeApplied}건, Fact 메모 ${factApplied}건 적용`;
+    return `Import complete — applied ${nodeApplied} node notes and ${factApplied} fact notes`;
   },
 }));
 

@@ -9,6 +9,8 @@ export const ICONS = {
   fit: "M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4",
   reset: "M13.5 8a5.5 5.5 0 1 1-1.7-4M13.5 2.5V6H10",
   legend: "M3 4h1.5M3 8h1.5M3 12h1.5M7 4h6M7 8h6M7 12h6",
+  zoom: "M7 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M10.5 10.5 14 14",
+  validation: "M8 2l6 11H2L8 2zM8 6v3M8 11.5h.01",
 } as const;
 
 export function Icon({ name, size = 14 }: { name: keyof typeof ICONS; size?: number }) {
