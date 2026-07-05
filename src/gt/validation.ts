@@ -62,6 +62,10 @@ const TACTIC_BY_NORMALIZED = new Map(ALLOWED_TACTICS.map((tactic) => [normalizeE
 const ALLOWED_LEVELS = new Set(["report_explicit", "execution_required"]);
 const BOOLEAN_TRUE_VALUES = new Set(["true", "1", "yes"]);
 const BOOLEAN_FALSE_VALUES = new Set(["false", "0", "no"]);
+const EMPTY_CELL_MARKERS = new Set(["", "-", "—", "–", "none", "null", "n/a", "na"]);
+const OPTIONAL_WORKBOOK_COLUMNS: Partial<Record<WorkbookSheetKind, string[]>> = {
+  fact: ["ref"],
+};
 
 export const EXPECTED_WORKBOOK_COLUMNS: Record<WorkbookSheetKind, string[]> = {
   node: ["node_id", "tactic", "technique_id", "technique_name", "behavior_summary", "requirements", "relationships", "parsers", "ref"],
@@ -73,8 +77,17 @@ export function normalizeEnumValue(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
 }
 
+export function isEmptyCellValue(value: unknown): boolean {
+  return EMPTY_CELL_MARKERS.has(normalizeEnumValue(value));
+}
+
 export function normalizeTactic(value: unknown): string | null {
   return TACTIC_BY_NORMALIZED.get(normalizeEnumValue(value)) ?? null;
+}
+
+function hasValidTacticList(value: unknown): boolean {
+  const tactics = splitList(value);
+  return tactics.length > 0 && tactics.every((tactic) => normalizeTactic(tactic));
 }
 
 export function parseBooleanCell(value: unknown): boolean | null {
@@ -99,9 +112,10 @@ export function validateWorkbookHeaders(
   rawHeaders: string[],
 ): ValidationIssue[] {
   const expected = EXPECTED_WORKBOOK_COLUMNS[kind];
+  const optional = OPTIONAL_WORKBOOK_COLUMNS[kind] ?? [];
   const headers = rawHeaders.map((header) => normalizeEnumValue(header));
   const headerSet = new Set(headers.filter(Boolean));
-  const expectedSet = new Set(expected);
+  const knownSet = new Set([...expected, ...optional]);
   const issues: ValidationIssue[] = [];
   let index = 0;
 
@@ -120,7 +134,7 @@ export function validateWorkbookHeaders(
   });
 
   headers
-    .filter((column) => column && !expectedSet.has(column))
+    .filter((column) => column && !knownSet.has(column))
     .forEach((column) => {
       index += 1;
       issues.push({
@@ -135,6 +149,7 @@ export function validateWorkbookHeaders(
     });
 
   const missingColumns = expected.filter((column) => !headerSet.has(column));
+  const expectedSet = new Set(expected);
   const presentExpectedColumns = headers.filter((column) => expectedSet.has(column));
   const expectedPresentOrder = expected.filter((column) => headerSet.has(column));
   if (missingColumns.length === 0 && presentExpectedColumns.join("\u0000") !== expectedPresentOrder.join("\u0000")) {
@@ -318,7 +333,7 @@ export function validateViewerData(data: ViewerData): ValidationResult {
         field: "technique_id",
       });
     }
-    if (node.tactic && !normalizeTactic(node.tactic)) {
+    if (!isEmptyCellValue(node.tactic) && !hasValidTacticList(node.tactic)) {
       addIssue({
         severity: "error",
         code: "value.invalid_tactic",
@@ -409,7 +424,7 @@ export function validateViewerData(data: ViewerData): ValidationResult {
         field: "is_external",
       });
     }
-    (fact.producers || []).forEach((nodeId) => {
+    splitIds(fact.producers).forEach((nodeId) => {
       if (!NODE_ID_RE.test(nodeId)) {
         addIssue({
           severity: "error",
@@ -432,7 +447,7 @@ export function validateViewerData(data: ViewerData): ValidationResult {
         });
       }
     });
-    (fact.consumers || []).forEach((consumerId) => {
+    splitIds(fact.consumers).forEach((consumerId) => {
       if (NODE_ID_RE.test(consumerId)) {
         if (!nodeIds.has(consumerId)) {
           addIssue({
@@ -469,7 +484,8 @@ export function validateViewerData(data: ViewerData): ValidationResult {
         });
       }
     });
-    if (fact.is_external === true && (fact.producers || []).length > 0) {
+    const producerIds = splitIds(fact.producers);
+    if (fact.is_external === true && producerIds.length > 0) {
       addIssue({
         severity: "warning",
         code: "value.invalid_is_external",
@@ -477,7 +493,7 @@ export function validateViewerData(data: ViewerData): ValidationResult {
         entityType: "fact",
         entityId: factId,
         field: "is_external",
-        relatedIds: fact.producers,
+        relatedIds: producerIds,
       });
     }
   });
@@ -570,7 +586,7 @@ function reportDuplicates(
 ): void {
   const seen = new Set<string>();
   const reported = new Set<string>();
-  ids.filter(Boolean).forEach((id) => {
+  ids.map((id) => String(id || "").trim()).filter((id) => !isEmptyCellValue(id)).forEach((id) => {
     if (!seen.has(id)) {
       seen.add(id);
       return;
@@ -588,11 +604,15 @@ function reportDuplicates(
 }
 
 function splitIds(value: string[] | string | undefined): string[] {
-  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter((item) => !isEmptyCellValue(item));
+  return splitList(value);
+}
+
+function splitList(value: unknown): string[] {
   return String(value || "")
     .split(/[,;]+/)
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter((item) => !isEmptyCellValue(item));
 }
 
 function collectRequirementFactIds(items: ViewerReqItem[] | undefined): string[] {
@@ -694,8 +714,6 @@ function detectCombineCycles(
     splitIds(combine.members)
       .filter((memberId) => COMBINE_ID_RE.test(memberId))
       .forEach((memberId) => visit(memberId, [...stack, combineId]));
-    const consumerId = combine.consumer || "";
-    if (COMBINE_ID_RE.test(consumerId)) visit(consumerId, [...stack, combineId]);
   };
   combines.forEach((combine) => visit(combine.combine_id, []));
 }

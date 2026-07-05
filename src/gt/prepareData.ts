@@ -13,6 +13,7 @@ import type {
   ViewerReqItem,
 } from "./types";
 import {
+  isEmptyCellValue,
   parseBooleanCell,
   validateWorkbookDataRows,
   validateWorkbookHeaders,
@@ -51,7 +52,7 @@ function splitIds(raw: string | undefined): string[] {
     .trim()
     .split(/[,;]+/)
     .map((t) => t.trim())
-    .filter(Boolean);
+    .filter((t) => !isEmptyCellValue(t));
 }
 
 function parseBool(value: string | undefined): boolean {

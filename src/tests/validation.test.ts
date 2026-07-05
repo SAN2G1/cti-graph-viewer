@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ViewerData } from "../gt/types";
 import {
   FACT_ID_RE,
+  isEmptyCellValue,
   normalizeTactic,
   parseBooleanCell,
   summarizeValidationIssues,
@@ -31,6 +32,13 @@ describe("validation model helpers", () => {
     expect(parseBooleanCell("no")).toBe(false);
     expect(parseBooleanCell("")).toBeNull();
     expect(parseBooleanCell("maybe")).toBeNull();
+  });
+
+  it("treats common placeholder cells as empty values", () => {
+    expect(isEmptyCellValue("-")).toBe(true);
+    expect(isEmptyCellValue("—")).toBe(true);
+    expect(isEmptyCellValue("None")).toBe(true);
+    expect(isEmptyCellValue("F01")).toBe(false);
   });
 
   it("summarizes issues by severity", () => {
@@ -78,6 +86,21 @@ describe("validation model helpers", () => {
     expect(issues[0].severity).toBe("warning");
   });
 
+  it("allows optional fact reference columns", () => {
+    const issues = validateWorkbookHeaders("fact", "fact.xlsx", [
+      "fact_id",
+      "name",
+      "producers",
+      "consumers",
+      "is_external",
+      "level",
+      "description",
+      "ref",
+    ]);
+
+    expect(issues).toEqual([]);
+  });
+
   it("reports invalid fact row is_external values before conversion", () => {
     const issues = validateWorkbookRows("fact", "fact.xlsx", [
       { fact_id: "F01", is_external: "true" },
@@ -116,12 +139,25 @@ describe("validation model helpers", () => {
     expect(issues.some((issue) => issue.message.includes("Missing fact"))).toBe(true);
   });
 
+  it("ignores empty placeholders in workbook reference cells", () => {
+    const issues = validateWorkbookDataRows({
+      nodeRows: [
+        { node_id: "N01", requirements: "-", parsers: "—" },
+        { node_id: "N02", requirements: "None", parsers: "" },
+      ],
+      factRows: [{ fact_id: "F01", name: "Known fact" }],
+      combineRows: [{ combine_id: "C01" }],
+    });
+
+    expect(issues).toEqual([]);
+  });
+
   it("accepts a mechanically consistent viewer dataset", () => {
     const data: ViewerData = {
       nodes: [
         {
           node_id: "N01",
-          tactic: "execution",
+          tactic: "execution, privilege escalation",
           technique_id: "T1059",
           requirements: [{ type: "fact", fact_id: "F01" }],
           parsers: [{ fact_id: "F02" }],
@@ -186,5 +222,24 @@ describe("validation model helpers", () => {
     const codes = validateViewerData(data).issues.map((issue) => issue.code);
     expect(codes).toContain("combine.cycle");
     expect(codes).toContain("ref.missing");
+  });
+
+  it("does not report parent combine consumers as cycles", () => {
+    const data: ViewerData = {
+      nodes: [{ node_id: "N01", tactic: "Execution", requirements: [{ type: "fact", fact_id: "F01" }] }],
+      facts: {
+        F01: { fact_id: "F01", is_external: true, producers: ["-"], consumers: ["C01"] },
+        F02: { fact_id: "F02", is_external: true, producers: [], consumers: ["C02"] },
+      },
+      combines: [
+        { combine_id: "C01", operator: "AND", members: ["F01"], consumer: "C02" },
+        { combine_id: "C02", operator: "OR", members: ["C01", "F02"], consumer: "N01" },
+      ],
+    };
+
+    const codes = validateViewerData(data).issues.map((issue) => issue.code);
+    expect(codes).not.toContain("combine.cycle");
+    expect(codes).not.toContain("id.invalid_node_id");
+    expect(codes).not.toContain("value.invalid_is_external");
   });
 });
