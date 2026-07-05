@@ -2,7 +2,7 @@
 
 A research prototype for inspecting CTI-derived attack dependency graphs built from `node.xlsx`, `fact.xlsx`, `combine.xlsx`, and the source report PDF. The system visualizes technique nodes, fact preconditions, AND/OR combinations, and mechanical consistency checks over the uploaded tables.
 
-![Fact-based attack dependency graph example](research/etc/cti-dependency-graph.png)
+![Fact-based attack dependency graph example](assets/cti-dependency-graph.png)
 
 ## Dataset
 
