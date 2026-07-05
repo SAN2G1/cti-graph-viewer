@@ -2,7 +2,7 @@ import type { ViewerReqItem } from "../types";
 
 export function RequirementsTree({ items }: { items: ViewerReqItem[] | undefined }) {
   if (!items || items.length === 0) {
-    return <span className="empty-state">Requirements 없음</span>;
+    return <span className="empty-state">No requirements</span>;
   }
   return (
     <ul className="req-tree">

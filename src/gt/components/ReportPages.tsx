@@ -43,7 +43,7 @@ function PageBlock({
             <img src={imageUrl} alt={`Page ${pageNumber}`} />
           ) : (
             <div className="page-img-unavailable">
-              상단 <strong>이미지 폴더</strong> 버튼을 클릭해서 <code>outputs/images</code> 폴더를 선택하세요.
+              Click the <strong>Image folder</strong> button at the top and select the <code>outputs/images</code> folder.
             </div>
           )}
         </div>

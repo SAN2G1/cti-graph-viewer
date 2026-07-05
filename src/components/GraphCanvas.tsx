@@ -21,16 +21,17 @@ export function GraphCanvas() {
   const showExternalFacts = useGraphStore((state) => state.showExternalFacts);
   const layoutVersion = useGraphStore((state) => state.layoutVersion);
   const flowLayoutVersion = useGraphStore((state) => state.flowLayoutVersion);
-  const flowLayoutMode = useGraphStore((state) => state.flowLayoutMode);
   const fitVersion = useGraphStore((state) => state.fitVersion);
   const resetVersion = useGraphStore((state) => state.resetVersion);
   const showLegend = useGraphStore((state) => state.showLegend);
+  const magnifier = useGraphStore((state) => state.magnifier);
   const setCy = useGraphStore((state) => state.setCy);
   const setSelectedIds = useGraphStore((state) => state.setSelectedIds);
-  // Persistent node positions, so manual drags survive element rebuilds
-  // (search / filter). Updated on every layout and on drag release.
+  // Preserve manual positions across search/filter rebuilds.
   const positionsRef = useRef<Map<string, cytoscape.Position>>(new Map());
   const prevParsedRef = useRef(parsed);
+  const loupeRef = useRef<HTMLDivElement | null>(null);
+  const loupeCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const elements = useMemo(() => {
     if (!parsed) return [];
@@ -72,8 +73,7 @@ export function GraphCanvas() {
       edge.removeClass("edge-hover");
     });
 
-    // Reveal the full fact/technique name on hover (the in-shape label is
-    // truncated to fit). Restored on mouse-out.
+    // Reveal the full label while hovering truncated nodes.
     cy.on("mouseover", "node", (event) => {
       const node = event.target;
       if (node.hasClass("tactic-band")) return;
@@ -94,40 +94,8 @@ export function GraphCanvas() {
       node.removeClass("node-hover");
     });
 
-    // Constrain dragging so an attack node stays inside its tactic box. Facts
-    // and combines are not constrained (they drag freely). The box is the
-    // tactic band that contains the node at grab time. Bands exist in
-    // tactic-banded layouts (Auto Layout / MITRE flow).
-    type DragBox = { x1: number; x2: number; y1: number; y2: number };
-    let dragBox: DragBox | null = null;
-    // When a tactic box is grabbed, its attack nodes move with it (keeping their
-    // relative positions inside the box).
+    // Dragging a tactic band moves its member attack nodes with it.
     let dragBand: { last: cytoscape.Position; members: cytoscape.NodeCollection } | null = null;
-
-    const chooseBox = (pos: cytoscape.Position): DragBox | null => {
-      let box: DragBox | null = null;
-      cy.nodes(".tactic-band").forEach((band) => {
-        const bb = band.boundingBox({ includeLabels: false, includeOverlays: false });
-        if (pos.x >= bb.x1 && pos.x <= bb.x2 && pos.y >= bb.y1 && pos.y <= bb.y2) {
-          box = { x1: bb.x1, x2: bb.x2, y1: bb.y1, y2: bb.y2 };
-        }
-      });
-      return box;
-    };
-
-    const clampToBox = (node: cytoscape.NodeSingular): void => {
-      if (!dragBox) return;
-      const pos = node.position();
-      const halfW = node.width() / 2 + 4;
-      const halfH = node.height() / 2 + 4;
-      const loX = dragBox.x1 + halfW;
-      const hiX = dragBox.x2 - halfW;
-      const loY = dragBox.y1 + halfH;
-      const hiY = dragBox.y2 - halfH;
-      const x = hiX >= loX ? Math.min(Math.max(pos.x, loX), hiX) : (dragBox.x1 + dragBox.x2) / 2;
-      const y = hiY >= loY ? Math.min(Math.max(pos.y, loY), hiY) : (dragBox.y1 + dragBox.y2) / 2;
-      if (x !== pos.x || y !== pos.y) node.position({ x, y });
-    };
 
     cy.on("grab", "node", (event) => {
       const node = event.target;
@@ -137,11 +105,9 @@ export function GraphCanvas() {
           last: { ...node.position() },
           members: cy.nodes(".attack-node").filter((member) => member.data("tactic") === tactic),
         };
-        dragBox = null;
         return;
       }
       dragBand = null;
-      dragBox = node.hasClass("attack-node") ? chooseBox(node.position()) : null;
     });
     cy.on("drag", "node", (event) => {
       const node = event.target;
@@ -159,7 +125,8 @@ export function GraphCanvas() {
         }
         return;
       }
-      clampToBox(node);
+      // Attack nodes drag freely; their tactic band resizes around them.
+      if (node.hasClass("attack-node")) resizeTacticBandForNode(cy, node);
     });
     cy.on("free", "node", (event) => {
       const node = event.target;
@@ -172,8 +139,7 @@ export function GraphCanvas() {
         }
         return;
       }
-      clampToBox(node);
-      dragBox = null;
+      if (node.hasClass("attack-node")) resizeTacticBandForNode(cy, node);
       positionsRef.current.set(node.id(), { ...node.position() });
     });
 
@@ -192,7 +158,7 @@ export function GraphCanvas() {
     if (!cy) return;
     const saved = positionsRef.current;
 
-    // A new dataset invalidates all remembered positions → force a fresh layout.
+    // A new dataset invalidates remembered positions.
     if (prevParsedRef.current !== parsed) {
       saved.clear();
       didRunInitialLayoutRef.current = false;
@@ -223,9 +189,7 @@ export function GraphCanvas() {
         runLayout(cy, viewMode, selectedIds, { fit: fitNow });
         didRunInitialLayoutRef.current = true;
       } else {
-        // Incremental change (search / filter): keep existing
-        // positions, place only newly revealed nodes near their neighbours, and
-        // redraw the tactic bands without nudging any node.
+        // Search/filter changes keep existing positions and place only new nodes.
         if (newNodes.nonempty()) placeNewNodesNearNeighbors(cy, newNodes, saved);
         if (hadBands) {
           const orientation = cy.width() >= cy.height() ? "horizontal" : "vertical";
@@ -236,16 +200,14 @@ export function GraphCanvas() {
     }
 
     previousViewModeRef.current = viewMode;
-    // Re-apply highlight classes after the rebuild without moving the viewport —
-    // the selection effect owns the single pan/center animation.
+    // Highlight after rebuild; selection owns the pan/center animation.
     applyHighlight(cy, selectedIds, { animateSelection: false });
   }, [elements, viewMode, parsed]);
 
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-    // Selecting a node only highlights and pans/centers the view — it must not
-    // re-run the attack-flow layout (which would reposition nodes instead).
+    // Selection should not re-run layout.
     const selectionKey = selectedIds.join("|");
     applyHighlight(cy, selectedIds, {
       animateSelection: selectionKey !== previousSelectionKeyRef.current,
@@ -264,24 +226,133 @@ export function GraphCanvas() {
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy || flowLayoutVersion === 0) return;
-    runFlowLayout(cy, flowLayoutMode);
+    runFlowLayout(cy);
     capturePositions(cy, positionsRef.current);
-  }, [flowLayoutVersion, flowLayoutMode]);
+  }, [flowLayoutVersion]);
 
   useEffect(() => {
     const cy = cyRef.current;
     if (cy && fitVersion > 0) cy.fit(undefined, 36);
   }, [fitVersion]);
 
-  // Reset discards manual drag positions so the next layout (triggered alongside
-  // resetVersion) rebuilds the arrangement from scratch.
+  // Reset discards manual drag positions.
   useEffect(() => {
     if (resetVersion > 0) positionsRef.current.clear();
   }, [resetVersion]);
 
+  // The loupe samples a high-res snapshot so labels stay readable.
+  useEffect(() => {
+    const container = containerRef.current;
+    const loupe = loupeRef.current;
+    const lcanvas = loupeCanvasRef.current;
+    if (!container || !loupe || !lcanvas) return;
+    if (!magnifier) {
+      loupe.style.display = "none";
+      return;
+    }
+    const ctx = lcanvas.getContext("2d");
+    if (!ctx) return;
+    const D = lcanvas.width;
+    const TARGET_ZOOM = 1.3; // loupe shows the graph as if at this zoom (readable)
+
+    const snapshot = { img: null as HTMLImageElement | null };
+    const capture = () => {
+      const cy = cyRef.current;
+      if (!cy || cy.elements().empty()) return;
+      const scale = Math.min(6, Math.max(2.5, TARGET_ZOOM / (cy.zoom() || 1)));
+      try {
+        const uri = cy.png({ output: "base64uri", bg: "#ffffff", full: false, scale });
+        const img = new Image();
+        img.onload = () => {
+          snapshot.img = img;
+        };
+        img.src = uri;
+      } catch {
+        // png can fail transiently; keep the previous snapshot
+      }
+    };
+    let captureTimer: number | null = null;
+    const scheduleCapture = () => {
+      if (captureTimer != null) window.clearTimeout(captureTimer);
+      captureTimer = window.setTimeout(capture, 150);
+    };
+
+    capture();
+    const cy = cyRef.current;
+    cy?.on("pan zoom add remove free layoutstop", scheduleCapture);
+
+    const draw = (clientX: number, clientY: number) => {
+      const img = snapshot.img;
+      const rect = container.getBoundingClientRect();
+      const cssX = clientX - rect.left;
+      const cssY = clientY - rect.top;
+      if (!img || cssX < 0 || cssY < 0 || cssX > rect.width || cssY > rect.height) {
+        loupe.style.display = "none";
+        return;
+      }
+      // Map cursor coordinates into the high-res snapshot.
+      const mag = container.clientWidth > 0 ? img.width / container.clientWidth : 1;
+      const sx = cssX * mag - D / 2;
+      const sy = cssY * mag - D / 2;
+      ctx.clearRect(0, 0, D, D);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, D, D);
+      ctx.drawImage(img, sx, sy, D, D, 0, 0, D, D);
+      const dCss = loupe.offsetWidth || D;
+      const off = 24;
+      // Default to the upper-left of the pointer; flip if it would clip.
+      let lx = cssX - off - dCss;
+      let ly = cssY - off - dCss;
+      if (lx < 0) lx = cssX + off;
+      if (ly < 0) ly = cssY + off;
+      if (lx + dCss > rect.width) lx = rect.width - dCss;
+      if (ly + dCss > rect.height) ly = rect.height - dCss;
+      loupe.style.left = `${Math.max(0, lx)}px`;
+      loupe.style.top = `${Math.max(0, ly)}px`;
+      loupe.style.display = "block";
+    };
+
+    const onMove = (event: MouseEvent) => draw(event.clientX, event.clientY);
+    const onLeave = () => {
+      loupe.style.display = "none";
+    };
+    container.addEventListener("mousemove", onMove);
+    container.addEventListener("mouseleave", onLeave);
+    return () => {
+      if (captureTimer != null) window.clearTimeout(captureTimer);
+      cy?.off("pan zoom add remove free layoutstop", scheduleCapture);
+      container.removeEventListener("mousemove", onMove);
+      container.removeEventListener("mouseleave", onLeave);
+      loupe.style.display = "none";
+    };
+  }, [magnifier]);
+
   return (
-    <section className="graph-section">
+    <section className="graph-section" style={{ position: "relative" }}>
       <div ref={containerRef} className="graph-canvas" />
+      <div
+        ref={loupeRef}
+        style={{
+          position: "absolute",
+          display: "none",
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          overflow: "hidden",
+          border: "2px solid #475569",
+          boxShadow: "0 6px 18px rgba(15,23,42,0.3)",
+          pointerEvents: "none",
+          zIndex: 30,
+          background: "#fff",
+        }}
+      >
+        <canvas
+          ref={loupeCanvasRef}
+          width={220}
+          height={220}
+          style={{ width: "100%", height: "100%", display: "block" }}
+        />
+      </div>
       {showLegend ? <GraphLegend viewMode={viewMode} /> : null}
     </section>
   );
@@ -339,12 +410,10 @@ function runAttackFlowLayout(
   if (options.fitView !== false) cy.fit(undefined, 56);
 }
 
-function runFlowLayout(cy: cytoscape.Core, mode: "default" | "mitre"): void {
+function runFlowLayout(cy: cytoscape.Core): void {
   clearTacticBands(cy);
   const orientation = cy.width() >= cy.height() ? "horizontal" : "vertical";
-  const positions = buildDirectedFlowLayout(cy, orientation, {
-    rankMode: mode === "mitre" ? "mitre-tactic" : "directed-flow",
-  });
+  const positions = buildDirectedFlowLayout(cy, orientation);
 
   cy.batch(() => {
     for (const [id, position] of positions) {
@@ -354,10 +423,6 @@ function runFlowLayout(cy: cytoscape.Core, mode: "default" | "mitre"): void {
   });
 
   resolveOverlaps(cy, orientation);
-  if (mode === "mitre") {
-    addTacticBands(cy, orientation);
-  }
-
   cy.fit(undefined, 48);
 }
 
@@ -365,9 +430,7 @@ function clearTacticBands(cy: cytoscape.Core): void {
   cy.nodes(".tactic-band").remove();
 }
 
-// Push overlapping nodes apart along the secondary axis so the layout is
-// readable. Separating only on the secondary axis keeps the tactic columns
-// (primary axis) intact; the graph just grows taller/wider as needed.
+// Separate overlaps without changing the primary tactic axis.
 function resolveOverlaps(cy: cytoscape.Core, orientation: "horizontal" | "vertical"): void {
   const nodes = cy.nodes().not(".tactic-band").toArray() as cytoscape.NodeSingular[];
   if (nodes.length < 2) return;
@@ -416,8 +479,7 @@ function capturePositions(cy: cytoscape.Core, saved: Map<string, cytoscape.Posit
   });
 }
 
-// Place newly revealed nodes near their already-positioned neighbours so they
-// don't pile up at the origin, without disturbing existing (dragged) nodes.
+// Place newly revealed nodes near positioned neighbours.
 function placeNewNodesNearNeighbors(
   cy: cytoscape.Core,
   newNodes: cytoscape.NodeCollection,
@@ -442,9 +504,28 @@ function placeNewNodesNearNeighbors(
   });
 }
 
+// Tactic band inner padding.
+const BAND_PADDING_X = 86;
+const BAND_PADDING_Y = 76;
+
+// Keep a tactic band wrapped around its member nodes.
+function resizeTacticBandForNode(cy: cytoscape.Core, node: cytoscape.NodeSingular): void {
+  const tactic = node.data("tactic") as string | undefined;
+  if (!tactic) return;
+  const band = cy.nodes(".tactic-band").filter((b) => b.data("label") === tactic);
+  if (band.empty()) return;
+  const members = cy.nodes(".attack-node").filter((member) => member.data("tactic") === tactic);
+  if (members.empty()) return;
+  const bb = members.boundingBox({ includeLabels: true, includeOverlays: false });
+  const b = band.first() as cytoscape.NodeSingular;
+  b.data("width", bb.x2 - bb.x1 + BAND_PADDING_X * 2);
+  b.data("height", bb.y2 - bb.y1 + BAND_PADDING_Y * 2);
+  b.position({ x: (bb.x1 + bb.x2) / 2, y: (bb.y1 + bb.y2) / 2 });
+}
+
 function addTacticBands(cy: cytoscape.Core, orientation: "horizontal" | "vertical"): void {
-  const paddingX = 86;
-  const paddingY = 76;
+  const paddingX = BAND_PADDING_X;
+  const paddingY = BAND_PADDING_Y;
   const bandGap = 18;
   const bandSpecs: Array<{
     tactic: string;
@@ -464,8 +545,8 @@ function addTacticBands(cy: cytoscape.Core, orientation: "horizontal" | "vertica
     const maxX = bounds.x2 + paddingX;
     const minY = bounds.y1 - paddingY;
     const maxY = bounds.y2 + paddingY;
-    const width = Math.max(220, maxX - minX);
-    const height = Math.max(150, maxY - minY);
+    const width = maxX - minX;
+    const height = maxY - minY;
     const center = {
       x: minX + width / 2,
       y: minY + height / 2,
@@ -478,9 +559,7 @@ function addTacticBands(cy: cytoscape.Core, orientation: "horizontal" | "vertica
   const primary = orientation === "horizontal" ? "x" : "y";
   const sizeKey = orientation === "horizontal" ? "width" : "height";
 
-  // Clip adjacent bands along the primary (column) axis so they never overlap.
-  // Only the band rectangles are resized — no node is moved, so manual drag
-  // positions are preserved.
+  // Clip adjacent bands without moving nodes.
   const sorted = [...bandSpecs].sort((a, b) => a.center[primary] - b.center[primary]);
   for (let i = 0; i < sorted.length - 1; i += 1) {
     const a = sorted[i];
@@ -628,7 +707,7 @@ export const graphStyle = [
       width: "data(width)",
       height: "data(height)",
       label: "data(label)",
-      "font-size": 13,
+      "font-size": 24,
       "font-weight": 700,
       "text-wrap": "none",
       "text-max-width": 600,

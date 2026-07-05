@@ -9,10 +9,10 @@ interface GraphState {
   searchTerm: string;
   showExternalFacts: boolean;
   showLegend: boolean;
+  magnifier: boolean;
   cy: cytoscape.Core | null;
   layoutVersion: number;
   flowLayoutVersion: number;
-  flowLayoutMode: "default" | "mitre";
   fitVersion: number;
   resetVersion: number;
   setParsed: (parsed: ParsedWorkbook | null) => void;
@@ -21,6 +21,7 @@ interface GraphState {
   setSearchTerm: (term: string) => void;
   setShowExternalFacts: (show: boolean) => void;
   setShowLegend: (show: boolean) => void;
+  setMagnifier: (on: boolean) => void;
   resetHighlight: () => void;
   resetView: () => void;
   setCy: (cy: cytoscape.Core | null) => void;
@@ -36,10 +37,10 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   searchTerm: "",
   showExternalFacts: true,
   showLegend: true,
+  magnifier: false,
   cy: null,
   layoutVersion: 0,
   flowLayoutVersion: 0,
-  flowLayoutMode: "default",
   fitVersion: 0,
   resetVersion: 0,
   setParsed: (parsed) => set({ parsed, selectedIds: [] }),
@@ -48,6 +49,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setSearchTerm: (searchTerm) => set({ searchTerm }),
   setShowExternalFacts: (showExternalFacts) => set({ showExternalFacts }),
   setShowLegend: (showLegend) => set({ showLegend }),
+  setMagnifier: (magnifier) => set({ magnifier }),
   resetHighlight: () => set({ selectedIds: [], searchTerm: "" }),
   resetView: () =>
     set((state) => ({
@@ -58,6 +60,6 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     })),
   setCy: (cy) => set({ cy }),
   requestLayout: () => set({ layoutVersion: get().layoutVersion + 1 }),
-  requestFlowLayout: () => set({ flowLayoutVersion: get().flowLayoutVersion + 1, flowLayoutMode: "default" }),
+  requestFlowLayout: () => set({ flowLayoutVersion: get().flowLayoutVersion + 1 }),
   requestFit: () => set({ fitVersion: get().fitVersion + 1 }),
 }));

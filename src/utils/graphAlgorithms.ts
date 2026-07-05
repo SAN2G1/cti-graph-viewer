@@ -1,10 +1,6 @@
 import type cytoscape from "cytoscape";
 import { ALLOWED_TACTICS } from "../constants/allowedValues";
 
-type FlowLayoutOptions = {
-  rankMode?: "directed-flow" | "mitre-tactic";
-};
-
 type LaneEntry = {
   id: string;
   column: number;
@@ -22,7 +18,6 @@ export function truncateLabel(text: string, max = 28): string {
 export function buildDirectedFlowLayout(
   cy: cytoscape.Core,
   orientation: "horizontal" | "vertical",
-  options: FlowLayoutOptions = {},
 ): Map<string, cytoscape.Position> {
   const nodes = cy.nodes().toArray();
   const nodeIds = nodes.map((node) => node.id());
@@ -61,18 +56,13 @@ export function buildDirectedFlowLayout(
     }
   }
 
-  const directedComponentRank = computeComponentRanks(components.length, dagIncoming, dagOutgoing);
-  const componentRank =
-    options.rankMode === "mitre-tactic"
-      ? computeMitreComponentRanks(nodes, componentByNodeId, incoming, outgoing, directedComponentRank)
-      : directedComponentRank;
+  const componentRank = computeComponentRanks(components.length, dagIncoming, dagOutgoing);
   const nodeEntries = nodes.map((node) => {
     const componentIndex = componentByNodeId.get(node.id()) ?? 0;
     return {
       id: node.id(),
       componentIndex,
       rank: componentRank.get(componentIndex) ?? 0,
-      tacticIndex: getNodeTacticIndex(node),
       degreeScore: (outgoing.get(node.id())?.size ?? 0) - (incoming.get(node.id())?.size ?? 0),
     };
   });
@@ -86,17 +76,13 @@ export function buildDirectedFlowLayout(
 
   const positions = new Map<string, cytoscape.Position>();
   const rankEntries = [...groups.entries()].sort((left, right) => left[0] - right[0]);
-  const isMitreLayout = options.rankMode === "mitre-tactic";
-  const columnGap = orientation === "horizontal" ? (isMitreLayout ? 300 : 220) : (isMitreLayout ? 190 : 140);
+  const columnGap = orientation === "horizontal" ? 220 : 140;
   const rowGap = orientation === "horizontal" ? 120 : 200;
   const primaryKey: "x" | "y" = orientation === "horizontal" ? "x" : "y";
   const secondaryKey: "x" | "y" = orientation === "horizontal" ? "y" : "x";
 
   rankEntries.forEach(([rank, entries]) => {
     entries.sort((left, right) => {
-      if (options.rankMode === "mitre-tactic" && left.tacticIndex !== right.tacticIndex) {
-        return left.tacticIndex - right.tacticIndex;
-      }
       if (left.degreeScore !== right.degreeScore) return right.degreeScore - left.degreeScore;
       return left.id.localeCompare(right.id);
     });
@@ -500,13 +486,15 @@ function computeLanePositions(
   orientation: "horizontal" | "vertical",
 ): Map<string, cytoscape.Position> {
   const positions = new Map<string, cytoscape.Position>();
-  const columnGap = 260;
+  // Gap between tactic columns.
+  const columnGap = 420;
+  // Lane offsets inside one tactic column.
   const laneXOffsetByLane = new Map<number, number>([
-    [-2, -74],
-    [-1, -34],
+    [-2, -90],
+    [-1, -42],
     [0, 0],
-    [1, 34],
-    [2, 74],
+    [1, 42],
+    [2, 90],
   ]);
 
   for (const entries of entriesByBucket.values()) {
@@ -537,53 +525,6 @@ function barycenterScore(
 
 function bucketKey(column: number, lane: number): string {
   return `${String(column).padStart(2, "0")}:${String(lane).padStart(2, "0")}`;
-}
-
-function computeMitreComponentRanks(
-  nodes: cytoscape.NodeSingular[],
-  componentByNodeId: Map<string, number>,
-  incoming: Map<string, Set<string>>,
-  outgoing: Map<string, Set<string>>,
-  fallbackRank: Map<number, number>,
-): Map<number, number> {
-  const rankSamples = new Map<number, number[]>();
-
-  for (const node of nodes) {
-    const componentIndex = componentByNodeId.get(node.id());
-    if (componentIndex === undefined) continue;
-
-    const ownTacticIndex = getNodeTacticIndex(node);
-    if (ownTacticIndex < ALLOWED_TACTICS.length) {
-      const samples = rankSamples.get(componentIndex) ?? [];
-      samples.push(ownTacticIndex);
-      rankSamples.set(componentIndex, samples);
-      continue;
-    }
-
-    const neighborTacticIndexes = [...(incoming.get(node.id()) ?? []), ...(outgoing.get(node.id()) ?? [])]
-      .map((neighborId) => nodes.find((candidate) => candidate.id() === neighborId))
-      .filter((candidate): candidate is cytoscape.NodeSingular => Boolean(candidate))
-      .map((candidate) => getNodeTacticIndex(candidate))
-      .filter((index) => index < ALLOWED_TACTICS.length);
-
-    if (neighborTacticIndexes.length > 0) {
-      const samples = rankSamples.get(componentIndex) ?? [];
-      samples.push(average(neighborTacticIndexes));
-      rankSamples.set(componentIndex, samples);
-    }
-  }
-
-  const ranks = new Map<number, number>();
-  for (const componentIndex of new Set([...componentByNodeId.values()])) {
-    const samples = rankSamples.get(componentIndex);
-    if (samples && samples.length > 0) {
-      ranks.set(componentIndex, Math.round(average(samples)));
-    } else {
-      ranks.set(componentIndex, ALLOWED_TACTICS.length + (fallbackRank.get(componentIndex) ?? 0));
-    }
-  }
-
-  return ranks;
 }
 
 function getNodeTacticIndex(node: cytoscape.NodeSingular): number {

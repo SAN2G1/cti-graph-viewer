@@ -33,7 +33,7 @@ export function FactsTab({ active }: { active: boolean }) {
         <div className="facts-search-wrap">
           <input
             className="facts-search"
-            placeholder="Fact 검색..."
+            placeholder="Search facts..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -57,7 +57,7 @@ export function FactsTab({ active }: { active: boolean }) {
 
       <div className="fact-detail">
         {!fact || !selectedFactId ? (
-          <div className="fact-detail-empty">← Fact를 선택하세요</div>
+          <div className="fact-detail-empty">← Select a fact</div>
         ) : (
           <>
             <div className="node-hero">
@@ -83,7 +83,7 @@ export function FactsTab({ active }: { active: boolean }) {
                 <div className="card-body">
                   <textarea
                     className="note-area"
-                    placeholder="이 Fact에 대한 메모..."
+                    placeholder="Notes for this fact..."
                     value={note}
                     onChange={(e) => setFactNote(selectedFactId, e.target.value)}
                   />
@@ -99,7 +99,7 @@ export function FactsTab({ active }: { active: boolean }) {
                   </div>
                 </div>
                 <div className="card-body">
-                  <ReportPages pages={fact.report_pages} emptyText="연결된 페이지 없음" />
+                  <ReportPages pages={fact.report_pages} emptyText="No linked pages" />
                 </div>
               </section>
             </div>

@@ -30,7 +30,7 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
   if (!data) {
     return (
       <div className={`tab-pane${active ? " active" : ""}`} id="tab-nodes">
-        <div className="gt-empty">상단 <strong>Load</strong> 버튼으로 정답지 Excel 3개(node·fact·combine)와 보고서 PDF를 올려 데이터를 생성하세요.</div>
+        <div className="gt-empty">Use the <strong>Load</strong> button at the top to upload the three answer-key Excel files (node·fact·combine) and the report PDF to build the data.</div>
       </div>
     );
   }
@@ -70,7 +70,7 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
             <div className="node-picker-search-wrap">
               <input
                 className="node-picker-search"
-                placeholder="ID, 기법, 전술 검색..."
+                placeholder="Search by ID, technique, tactic..."
                 value={nodeSearch}
                 onChange={(e) => setNodeSearch(e.target.value)}
                 onKeyDown={(e) => {
@@ -80,10 +80,10 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
             </div>
             <ul className="node-picker-list">
               {matches.length === 0 ? (
-                <li className="node-pick-empty">검색 결과 없음</li>
+                <li className="node-pick-empty">No results</li>
               ) : (
                 matches.map(({ n, i }) => {
-                  const name = n.technique_name || n.technique_id || "(기법 미지정)";
+                  const name = n.technique_name || n.technique_id || "(no technique)";
                   return (
                     <li
                       key={n.node_id}
@@ -117,7 +117,6 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
 
       {node ? (
         <div id="node-content">
-          {/* Hero */}
           <div className="node-hero">
             <div className="node-hero-top">
               <span className="node-id">{node.node_id}</span>
@@ -128,7 +127,6 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
             {node.behavior_summary ? <p className="node-behavior">{node.behavior_summary}</p> : null}
           </div>
 
-          {/* Main column */}
           <div className="node-main">
             <section className="card">
               <div className="card-header"><span className="card-label">Requirements</span></div>
@@ -141,7 +139,7 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
               <div className="card-header"><span className="card-label">Parsers</span></div>
               <div className="card-body">
                 {!node.parsers || node.parsers.length === 0 ? (
-                  <span className="empty-state">Parsers 없음</span>
+                  <span className="empty-state">No parsers</span>
                 ) : (
                   node.parsers.map((p, i) => (
                     <div key={i} className={`fact-chip${p.inferred_flag ? " inferred" : ""}`}>
@@ -162,7 +160,7 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
                 {node.relationships ? (
                   <div className="relationships-text">{node.relationships}</div>
                 ) : (
-                  <span className="empty-state">Relationships 없음</span>
+                  <span className="empty-state">No relationships</span>
                 )}
               </div>
             </section>
@@ -188,12 +186,11 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
                 </div>
               </div>
               <div className="card-body">
-                <ReportPages pages={node.report_pages} emptyText="참조 페이지 없음" />
+                <ReportPages pages={node.report_pages} emptyText="No reference pages" />
               </div>
             </section>
           </div>
 
-          {/* Rail */}
           <div className="node-rail">
             <section className="card">
               <div className="card-header"><span className="card-label">Dependency</span></div>
@@ -207,7 +204,7 @@ export function NodeVerificationTab({ active }: { active: boolean }) {
               <div className="card-body">
                 <textarea
                   className="note-area"
-                  placeholder="이 노드에 대한 메모..."
+                  placeholder="Notes for this node..."
                   value={note}
                   onChange={(e) => setNodeNote(e.target.value)}
                 />

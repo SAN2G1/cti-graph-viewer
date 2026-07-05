@@ -19,6 +19,8 @@ export function Toolbar() {
   const requestFit = useGraphStore((state) => state.requestFit);
   const showLegend = useGraphStore((state) => state.showLegend);
   const setShowLegend = useGraphStore((state) => state.setShowLegend);
+  const magnifier = useGraphStore((state) => state.magnifier);
+  const setMagnifier = useGraphStore((state) => state.setMagnifier);
   const resetView = useGraphStore((state) => state.resetView);
 
   return (
@@ -33,22 +35,30 @@ export function Toolbar() {
             ))}
           </select>
           <SearchBox />
-          <button type="button" className="tb-btn" onClick={requestLayout} title="현재 뷰 기준 자동 배치">
+          <button type="button" className="tb-btn" onClick={requestLayout} title="Auto-layout for the current view">
             <Icon name="grid" /> Auto Layout
           </button>
-          <button type="button" className="tb-btn" onClick={requestFlowLayout} title="흐름 기준 배치">
+          <button type="button" className="tb-btn" onClick={requestFlowLayout} title="Flow-based layout">
             <Icon name="flow" /> Flow Layout
           </button>
-          <button type="button" className="tb-btn" onClick={requestFit} title="화면에 맞춤">
+          <button type="button" className="tb-btn" onClick={requestFit} title="Fit to screen">
             <Icon name="fit" /> Fit
           </button>
           <button type="button" className="tb-btn" onClick={resetView} title="Reset selection, search, and node positions">
             <Icon name="reset" /> Reset
           </button>
-          <button type="button" className="tb-btn" onClick={() => setShowLegend(!showLegend)} title="범례 표시 전환">
+          <button type="button" className="tb-btn" onClick={() => setShowLegend(!showLegend)} title="Toggle legend">
             <Icon name="legend" /> Legend
           </button>
-          <button type="button" className="tb-btn" disabled={!cy} onClick={() => exportPng(cy)} title="그래프 PNG 저장">
+          <button
+            type="button"
+            className={`tb-btn${magnifier ? " active" : ""}`}
+            onClick={() => setMagnifier(!magnifier)}
+            title="Magnifier — hover over the graph to magnify the area under the cursor"
+          >
+            <Icon name="zoom" /> Magnifier
+          </button>
+          <button type="button" className="tb-btn" disabled={!cy} onClick={() => exportPng(cy)} title="Save graph as PNG">
             <Icon name="image" /> PNG
           </button>
         </div>

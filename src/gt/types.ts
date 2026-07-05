@@ -1,6 +1,4 @@
-// Type definitions for the GT-verifier data source (viewer_data.json).
-// This is the single unified source: GT tabs render it directly, and the
-// diagram tab derives a ParsedWorkbook from it (see viewerDataAdapter.ts).
+// Viewer data produced from the node/fact/combine answer sheets.
 
 export interface ViewerPage {
   page_number: number | string;
