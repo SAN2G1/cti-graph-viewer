@@ -1,8 +1,8 @@
-# Report Sources
+# Source Analyses
 
-Original KISA TTPs reports used for the dataset. Last accessed: 2026-07-01.
+Original multi-scenario threat analyses used for the dataset. The analyses are organized around attack operations, attack vectors and techniques, target environments, or attack strategies and behaviors. Each analysis may synthesize multiple incidents, scenarios, and attack paths. Last accessed: 2026-07-01.
 
-| Dataset | Report Title | Pages | Source |
+| Dataset | Analysis Title | Pages | Source |
 |---------|--------------|-------|--------|
 | `ttps-01` | Internal Network Compromise through a Website | 32 | [KISA](https://www.boho.or.kr/kr/bbs/view.do?searchCnd=1&bbsId=B0000127&searchWrd=ttps&menuNo=205021&pageIndex=2&categoryCode=&nttId=35330) |
 | `ttps-02` | Info. Collection Attack Infra. through Spear Phishing | 79 | [KISA](https://www.boho.or.kr/kr/bbs/view.do?searchCnd=1&bbsId=B0000127&searchWrd=ttps&menuNo=205021&pageIndex=2&categoryCode=&nttId=35471) |
