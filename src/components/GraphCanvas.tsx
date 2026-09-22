@@ -505,8 +505,8 @@ function placeNewNodesNearNeighbors(
 }
 
 // Tactic band inner padding.
-const BAND_PADDING_X = 86;
-const BAND_PADDING_Y = 76;
+const BAND_PADDING_X = 48;
+const BAND_PADDING_Y = 36;
 
 // Keep a tactic band wrapped around its member nodes.
 function resizeTacticBandForNode(cy: cytoscape.Core, node: cytoscape.NodeSingular): void {
@@ -516,7 +516,8 @@ function resizeTacticBandForNode(cy: cytoscape.Core, node: cytoscape.NodeSingula
   if (band.empty()) return;
   const members = cy.nodes(".attack-node").filter((member) => member.data("tactic") === tactic);
   if (members.empty()) return;
-  const bb = members.boundingBox({ includeLabels: true, includeOverlays: false });
+  // Labels stay inside node bodies, but hover expands them; measuring bodies keeps the padding stable while dragging.
+  const bb = members.boundingBox({ includeLabels: false, includeOverlays: false });
   const b = band.first() as cytoscape.NodeSingular;
   b.data("width", bb.x2 - bb.x1 + BAND_PADDING_X * 2);
   b.data("height", bb.y2 - bb.y1 + BAND_PADDING_Y * 2);
@@ -540,7 +541,7 @@ function addTacticBands(cy: cytoscape.Core, orientation: "horizontal" | "vertica
     const tacticNodes = cy.nodes(".attack-node").filter((node) => node.data("tactic") === tactic);
     if (tacticNodes.empty()) return;
 
-    const bounds = tacticNodes.boundingBox({ includeLabels: true, includeOverlays: false });
+    const bounds = tacticNodes.boundingBox({ includeLabels: false, includeOverlays: false });
     const minX = bounds.x1 - paddingX;
     const maxX = bounds.x2 + paddingX;
     const minY = bounds.y1 - paddingY;
@@ -713,11 +714,11 @@ export const graphStyle = [
       "text-max-width": 600,
       "text-valign": "top",
       "text-halign": "center",
-      "text-margin-y": 10,
-      color: "#6b7280",
+      "text-margin-y": -4,
+      color: "#374151",
       "background-color": "#f8fafc",
       "background-opacity": 0.35,
-      "border-color": "#94a3b8",
+      "border-color": "#475569",
       "border-style": "dashed",
       "border-width": 2,
       "z-index": 0,
@@ -816,9 +817,9 @@ export const graphStyle = [
       "font-size": 9,
       color: "#6b7280",
       width: 2,
-      "line-color": "#bfc3c9",
+      "line-color": "#9ca3af",
       "target-arrow-shape": "triangle",
-      "target-arrow-color": "#bfc3c9",
+      "target-arrow-color": "#9ca3af",
       "curve-style": "bezier",
       "text-background-color": "#ffffff",
       "text-background-opacity": 0.85,
@@ -834,8 +835,8 @@ export const graphStyle = [
     style: {
       width: 2,
       "line-style": "dashed",
-      "line-color": "#b4b8bf",
-      "target-arrow-color": "#b4b8bf",
+      "line-color": "#9198a4",
+      "target-arrow-color": "#9198a4",
     },
   },
   {

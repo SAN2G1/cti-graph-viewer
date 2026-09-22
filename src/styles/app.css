@@ -454,14 +454,14 @@ h1 {
 
 .legend-line {
   height: 0;
-  border-top: 3px solid #bfc3c9;
+  border-top: 3px solid #9ca3af;
 }
 
 .legend-line.incoming { border-color: #0058cc; }
 .legend-line.outgoing { border-color: #ea580c; }
 .legend-line.fact { border-color: #0d9488; }
 .legend-line.combine { border-color: #0058cc; }
-.legend-line.member { border-top-style: dashed; border-color: #b4b8bf; }
+.legend-line.member { border-top-style: dashed; border-color: #9198a4; }
 
 .legend-swatch {
   width: 18px;
